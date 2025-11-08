@@ -1,45 +1,126 @@
-import { v4 as uuidv4 } from "uuid";
+import admin from "firebase-admin";
+import { db } from "../config/firebase";
+import { Product, ProductUpdateRequestBody } from "../types/product.type";
 
-type Product = {
-  id: string;
-  title: string;
-  description?: string;
-  price: number;
-  images?: string[];
-  active?: boolean;
-  createdAt: string;
-};
+const COLLECTION = "produtos";
 
-const db: Product[] = []; // "db" em memória
-
-export const list = (): Product[] => db.filter(p => p.active !== false);
-
-export const get = (id: string): Product | undefined => db.find(p => p.id === id);
-
-export const create = (payload: Partial<Product>): Product => {
-  const product: Product = {
-    id: uuidv4(),
-    title: payload.title || "Sem título",
-    description: payload.description || "",
-    price: payload.price ?? 0,
-    images: payload.images || [],
-    active: payload.active ?? true,
-    createdAt: new Date().toISOString(),
+/**
+ * Converte documento Firestore para Produto (inclui id e converte Timestamp -> Date)
+ */
+function docToProduto(id: string, data: FirebaseFirestore.DocumentData): Product {
+  return {
+    id,
+    titulo: data.titulo,
+    descricao: data.descricao,
+    preco: data.preco,
+    modelagem: data.modelagem,
+    categoria: data.categoria,
+    altura: data.altura,
+    comprimento: data.comprimento,
+    imagemCapa: data.imagemCapa,
+    imagens: data.imagens || [],
+    ativo: data.ativo === undefined ? true : data.ativo,
+    dataAnuncio: data.dataAnuncio && data.dataAnuncio.toDate ? data.dataAnuncio.toDate() : new Date(data.dataAnuncio),
   };
-  db.push(product);
-  return product;
+}
+
+/**
+ * cria produto
+ * - aceita Product onde dataAnuncio é Date ou string ISO; armazenamos como Timestamp
+ */
+export const createProduct = async (payload: Omit<Product, "id">): Promise<Product> => {
+  // validações básicas (pode melhorar com zod/joi)
+  if (!payload.titulo) throw new Error("titulo é obrigatório");
+  if (payload.preco === undefined || payload.preco === null) throw new Error("preco é obrigatório");
+  if (!payload.dataAnuncio) payload.dataAnuncio = new Date();
+
+  // converter dataAnuncio para Timestamp do Firestore
+  const dataToSave = {
+    ...payload,
+    dataAnuncio: admin.firestore.Timestamp.fromDate(new Date(payload.dataAnuncio)),
+  };
+
+  const ref = await db.collection(COLLECTION).add(dataToSave);
+  const doc = await ref.get();
+  return docToProduto(doc.id, doc.data()!);
 };
 
-export const update = (id: string, patch: Partial<Product>): Product | null => {
-  const idx = db.findIndex(p => p.id === id);
-  if (idx === -1) return null;
-  db[idx] = { ...db[idx], ...patch };
-  return db[idx];
+/**
+ * atualiza campos de um documento da coleção produto
+ * @param payload 
+ * @param product_id 
+ */
+export const updateProduct = async (payload: ProductUpdateRequestBody): Promise<void> => {
+  const ref = db.collection(COLLECTION).doc(payload.id)
+  await ref.update({
+    ...payload
+  })
+}
+
+
+/**
+ * lista todos os produtos
+ * - aceita Product onde dataAnuncio é Date ou string ISO; armazenamos como Timestamp
+ */
+export const listProducts = async (): Promise<Product[]> => {
+  let query: FirebaseFirestore.Query = db.collection(COLLECTION);
+  const snap = await query.orderBy("dataAnuncio", "desc").get();
+
+  const items: Product[] = snap.docs.map(doc => docToProduto(doc.id, doc.data()));
+  
+  /* também funciona
+  const cityRef = db.collection(COLLECTION)
+  const docs = (await cityRef.get()).docs;
+  const items: Product[] = docs.map(doc => docToProduto(doc.id, doc.data()));
+   */
+  return items;
 };
 
-export const remove = (id: string): boolean => {
-  const idx = db.findIndex(p => p.id === id);
-  if (idx === -1) return false;
-  db.splice(idx, 1);
-  return true;
+/**
+ * lista os produtos de forma paginada
+ * @param limit 
+ * @param startAfterId 
+ * @returns 
+*/
+export const pageProducts = async (
+  limit: number,
+  startAfterId?: string
+) => {
+  let query = db.collection(COLLECTION).orderBy("dataAnuncio", "desc").limit(limit);
+
+  // se o cliente mandou o último ID da página anterior, usa startAfter, quer dizer que ele paginou para a próxima página
+  if (startAfterId) {
+    const lastDoc = await db.collection(COLLECTION).doc(startAfterId).get();
+    if (lastDoc.exists) {
+      query = query.startAfter(lastDoc);
+    }
+  }
+
+  const snapshot = await query.get();
+
+  // mapeia para objetos Produto
+  const produtos: Product[] = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...(doc.data() as Product),
+  }));
+
+  // captura o último documento retornado (para o front usar na próxima página)
+  const lastVisible = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null;
+
+  return {
+    produtos,
+    lastVisible,
+    total: snapshot.size,
+  };
 };
+
+/**
+ * exclui o produto da coleção
+ * @param product_id 
+ */
+export const deleteProduct = async (product_id: string) => {
+  // posteriormente vai ser necessário excluir outros documentos que terão vinculos com o produto (curtidas, carrinho, etc)
+
+  // por enquanto excluindo apenas o produto
+  await db.collection(COLLECTION).doc(product_id).delete();
+}

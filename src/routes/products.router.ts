@@ -1,8 +1,8 @@
 import { Router } from "express";
 import {
   listProducts,
-  getProduct,
   createProduct,
+  pageProducts,
   updateProduct,
   deleteProduct,
 } from "../controllers/products.controller";
@@ -10,9 +10,9 @@ import {
 const router = Router();
 
 router.get("/", listProducts);       // GET /api/products
-router.get("/:id", getProduct);      // GET /api/products/:id
 router.post("/", createProduct);     // POST /api/products
-router.put("/:id", updateProduct);   // PUT /api/products/:id
-router.delete("/:id", deleteProduct);// DELETE /api/products/:id
+router.get("/page", pageProducts);     // GET /api/products/page
+router.put("/update", updateProduct)
+router.delete("/delete", deleteProduct)
 
 export default router;
