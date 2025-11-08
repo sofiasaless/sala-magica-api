@@ -12,6 +12,17 @@ export const listProducts = async (req: Request, res: Response) => {
   }
 };
 
+export const findProductById = async (req: Request, res: Response) => {
+  try {
+    const productId = req.params.id as string;
+    const product = await ProductService.getProductById(productId);
+    res.status(200).json(product);
+  } catch (err) {
+    console.error("findProductById error:", err);
+    res.status(500).json({ message: "Erro ao buscar produto" });
+  }
+}
+
 export const createProduct = async (req: Request, res: Response) => {
   try {
     const body = req.body as Partial<Product>;
@@ -81,7 +92,7 @@ export const pageProducts = async (req: Request, res: Response) => {
 
 export const deleteProduct = async (req: Request, res: Response) => {
   try {
-    const product_id = req.query.id as string;
+    const product_id = req.params.id as string;
     await ProductService.deleteProduct(product_id)
     res.sendStatus(200);
   } catch (err) {

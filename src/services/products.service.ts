@@ -76,6 +76,12 @@ export const listProducts = async (): Promise<Product[]> => {
   return items;
 };
 
+export const getProductById = async (product_id: string): Promise<Product> => {
+  const doc = await db.collection(COLLECTION).doc(product_id).get();
+  if (!doc.exists) throw new Error("Produto não encontrado");
+  return docToProduto(doc.id, doc.data()!);
+}
+
 /**
  * lista os produtos de forma paginada
  * @param limit 
