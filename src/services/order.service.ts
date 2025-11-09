@@ -50,11 +50,20 @@ export const createOrder = async (payload: Omit<Order, "id">): Promise<Order> =>
   return docToOrder(doc.id, doc.data()!);
 }
 
-export const updateOrder = async (payload: OrderUpdateRequestBody) => {
-  if (payload.id === undefined) throw new Error("id da encomenda é necessária para atualização");
+export const updateOrder = async (id_encomenda: string, payload: Partial<Order>) => {
+  if (id_encomenda === undefined) throw new Error("id da encomenda é necessária para atualização");
 
-  const ref = db.collection(COLLECTION).doc(payload.id)
-  await ref.update({
+  const encomendaRef = db.collection(COLLECTION).doc(id_encomenda);
+  const encomendaDoc = await encomendaRef.get();
+
+  if (!encomendaDoc.exists) throw new Error("Encomenda não encontrada");
+
+  const camposNaoPermitidos = ["id", "dataEncomenda", "solicitante"];
+  for (const campo of camposNaoPermitidos) {
+    if (campo in payload) delete (payload as any)[campo];
+  }
+
+  await encomendaRef.update({
     ...payload
   })
 }

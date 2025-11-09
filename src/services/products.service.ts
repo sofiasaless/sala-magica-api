@@ -47,14 +47,24 @@ export const createProduct = async (payload: Omit<Product, "id">): Promise<Produ
 
 /**
  * atualiza campos de um documento da coleção produto
- * @param payload 
- * @param product_id 
- */
-export const updateProduct = async (payload: ProductUpdateRequestBody): Promise<void> => {
-  const ref = db.collection(COLLECTION).doc(payload.id)
-  await ref.update({
+ * @param payload
+ * @param id_produto
+*/
+export const updateProduct = async (id_produto: string, payload: Partial<Product>): Promise<void> => {
+  const produtoRef = db.collection(COLLECTION).doc(id_produto);
+  const produtoDoc = await produtoRef.get();
+  
+  if (!produtoDoc.exists) throw new Error("Produto não encontrado");
+  
+  // assegurando que determinados campos nao sejam atualizados mesmo que sejam enviados no payload
+  const camposNaoPermitidos = ["id", "dataAnuncio"];
+  for (const campo of camposNaoPermitidos) {
+    if (campo in payload) delete (payload as any)[campo];
+  }
+  
+  await produtoRef.update({
     ...payload
-  })
+  });  
 }
 
 

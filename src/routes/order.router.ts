@@ -6,7 +6,7 @@ const router = Router()
 router.get("/", listOrder)
 router.get("/:id", findOrderById)
 router.post("/create", createOrder)
-router.put("/update", updateOrder)
+router.put("/update/:id", updateOrder)
 router.delete("/delete/:id", deleteOrder)
 
 export default router

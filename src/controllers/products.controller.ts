@@ -56,20 +56,13 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
   try {
-    const body = req.body as Partial<ProductUpdateRequestBody>;
+    const id_produto = req.params.id as string;
+    const body = req.body as Partial<Product>;
 
-    if (body != undefined) {
-      if (body.id === undefined) throw new Error("id do produto é necessário para atualização");
+    if (id_produto === "") return res.status(400).json({ error: "ID do produto é obrigatório" });
 
-      // preencher defaults mínimos
-      const toUpdate: ProductUpdateRequestBody = {
-        id: body.id,
-        ...body
-      };
-      console.info('conteudo do body ', toUpdate)
-      await ProductService.updateProduct(toUpdate);
-      res.sendStatus(200);
-    }
+    await ProductService.updateProduct(id_produto, body);
+    res.sendStatus(200);
   } catch (err: any) {
     console.error("createProduct error:", err);
     res.status(400).json({ message: err.message || "Erro ao criar produto" });
