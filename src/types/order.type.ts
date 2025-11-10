@@ -7,7 +7,7 @@ export type Order = {
   comprimento?: number,
   descricao: string,
   pendente: boolean,
-  imagemReferencia?: string,
+  imagemReferencia?: string[],
   referencias?: [],
   solicitante: string | DocumentReference,
   dataEncomenda: Date

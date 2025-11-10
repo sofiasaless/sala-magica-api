@@ -44,8 +44,6 @@ export const createOrder = async (req: Request, res: Response) => {
       referencias: body.referencias || [],
       dataEncomenda: body.dataEncomenda ?? new Date(),
     };
-
-    console.info(toCreate)
     const created = await OrderService.createOrder(toCreate);
     res.status(201).json(created);
   } catch (err: any) {
@@ -56,22 +54,16 @@ export const createOrder = async (req: Request, res: Response) => {
 
 export const updateOrder = async (req: Request, res: Response) => {
   try {
-    const body = req.body as Partial<OrderUpdateRequestBody>;
+    const id_encomenda = req.params.id as string;
+    const body = req.body as Partial<Order>;
 
-    if (body != undefined) {
+    if (id_encomenda === "") return res.status(400).json({ error: "ID da encomenda é obrigatório" });
 
-      // preencher defaults mínimos
-      const toUpdate: OrderUpdateRequestBody = {
-        id: body.id || "",
-        ...body
-      };
-      console.info('conteudo do body do update', toUpdate)
-      await OrderService.updateOrder(toUpdate);
-      res.sendStatus(200);
-    }
+    await OrderService.updateOrder(id_encomenda, body);
+    res.sendStatus(200);
   } catch (err: any) {
-    console.error("createProduct error:", err);
-    res.status(400).json({ message: err.message || "Erro ao criar produto" });
+    console.error("updateOrder error:", err);
+    res.status(400).json({ message: err.message || "Erro ao atualizar encomenda" });
   }
 };
 

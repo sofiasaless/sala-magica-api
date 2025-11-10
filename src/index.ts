@@ -1,3 +1,5 @@
+import './listeners/product.listener';
+import './listeners/order.listener';
 import dotenv from "dotenv";
 dotenv.config();
 

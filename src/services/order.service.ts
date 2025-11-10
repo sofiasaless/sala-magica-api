@@ -2,6 +2,7 @@ import admin from "firebase-admin";
 import { Order, OrderUpdateRequestBody } from "../types/order.type"
 import { db } from "../config/firebase";
 import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
+import { eventBus, eventNames } from "./eventBus";
 
 const COLLECTION = "encomendas"
 
@@ -47,14 +48,28 @@ export const createOrder = async (payload: Omit<Order, "id">): Promise<Order> =>
 
   const ref = await db.collection(COLLECTION).add(dataToSave);
   const doc = await ref.get();
-  return docToOrder(doc.id, doc.data()!);
+  const encomenda = docToOrder(doc.id, doc.data()!);
+
+  // disparando o envento de nova encomenda criada
+  eventBus.emit(eventNames.ENCOMENDA_CRIADA, encomenda);
+  
+  return encomenda
 }
 
-export const updateOrder = async (payload: OrderUpdateRequestBody) => {
-  if (payload.id === undefined) throw new Error("id da encomenda é necessária para atualização");
+export const updateOrder = async (id_encomenda: string, payload: Partial<Order>) => {
+  if (id_encomenda === undefined) throw new Error("id da encomenda é necessária para atualização");
 
-  const ref = db.collection(COLLECTION).doc(payload.id)
-  await ref.update({
+  const encomendaRef = db.collection(COLLECTION).doc(id_encomenda);
+  const encomendaDoc = await encomendaRef.get();
+
+  if (!encomendaDoc.exists) throw new Error("Encomenda não encontrada");
+
+  const camposNaoPermitidos = ["id", "dataEncomenda", "solicitante"];
+  for (const campo of camposNaoPermitidos) {
+    if (campo in payload) delete (payload as any)[campo];
+  }
+
+  await encomendaRef.update({
     ...payload
   })
 }
