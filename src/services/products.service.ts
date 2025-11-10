@@ -1,6 +1,7 @@
 import admin from "firebase-admin";
 import { db } from "../config/firebase";
 import { Product, ProductUpdateRequestBody } from "../types/product.type";
+import { eventBus, eventNames } from "./eventBus";
 
 const COLLECTION = "produtos";
 
@@ -42,7 +43,12 @@ export const createProduct = async (payload: Omit<Product, "id">): Promise<Produ
 
   const ref = await db.collection(COLLECTION).add(dataToSave);
   const doc = await ref.get();
-  return docToProduto(doc.id, doc.data()!);
+  const produto = docToProduto(doc.id, doc.data()!);
+
+  // emitindo o evento de produto criado para a notificação
+  await eventBus.emit(eventNames.PRODUTO_CRIADO, produto);
+
+  return produto;
 };
 
 /**
