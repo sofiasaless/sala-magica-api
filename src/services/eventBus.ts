@@ -2,7 +2,7 @@ type EventHandler = (payload: any) => Promise<void> | void;
 
 export enum eventNames {
   PRODUTO_CRIADO = "produto.criado",
-  ENCOMENDA_CRIADA = "encomenda.criada"
+  ENCOMENDA_CRIADA = "encomenda.criada",
 }
 
 class EventBus {

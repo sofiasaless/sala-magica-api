@@ -3,6 +3,7 @@ import cors from "cors";
 import productRoutes from "./routes/products.router";
 import orderRouter from "./routes/order.router"
 import favoriteRouter from "./routes/favorite.router"
+import notificationRouter from "./routes/notification.router"
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRouter);
 app.use("/api/favorites", favoriteRouter);
+app.use("/api/notification", notificationRouter);
 
 // health
 app.get("/health", (req, res) => res.json({ ok: true }));

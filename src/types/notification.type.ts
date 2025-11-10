@@ -31,3 +31,9 @@ export type NotificationDestino =
   | { tipo: "ADMIN" };
 
 export type NotificationType = "PADRAO" | "PRODUTO" | "ENCOMENDA" | "SISTEMA";
+
+export type OrderAwnserNotificationPayload = {
+  id_encomenda: string | DocumentReference;
+  id_usuario: string | DocumentReference;
+  mensagem: string;
+};

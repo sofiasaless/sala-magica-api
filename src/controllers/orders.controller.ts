@@ -44,8 +44,6 @@ export const createOrder = async (req: Request, res: Response) => {
       referencias: body.referencias || [],
       dataEncomenda: body.dataEncomenda ?? new Date(),
     };
-
-    console.info(toCreate)
     const created = await OrderService.createOrder(toCreate);
     res.status(201).json(created);
   } catch (err: any) {
@@ -57,7 +55,7 @@ export const createOrder = async (req: Request, res: Response) => {
 export const updateOrder = async (req: Request, res: Response) => {
   try {
     const id_encomenda = req.params.id as string;
-    const body = req.body as Partial<OrderUpdateRequestBody>;
+    const body = req.body as Partial<Order>;
 
     if (id_encomenda === "") return res.status(400).json({ error: "ID da encomenda é obrigatório" });
 

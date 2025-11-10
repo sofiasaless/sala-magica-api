@@ -1,6 +1,8 @@
 // notificationService.ts
 import { db } from "../config/firebase";
-import { Notification, NotificationDestino, NotificationType } from "../types/notification.type";
+import { Notification, NotificationDestino, NotificationType, OrderAwnserNotificationPayload } from "../types/notification.type";
+import { Order } from "../types/order.type";
+import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
 
 interface CreateNotificationDTO {
   titulo: string;
@@ -51,15 +53,60 @@ export class NotificationService {
           dataNotificacao: new Date(),
           lido: false,
         };
-        console.info('notificação criada para usuario:', doc.id)
+        // console.info('notificação criada para usuario:', doc.id)
         batch.set(notificacao_ref, notificacao_global);
       });
       await batch.commit();
     });
   }
 
-  async createEncomendaNotificacao() {
+  async createEncomendaNotificacao(order: Order) {
+    await this.create({
+      titulo: `Novo pedido de encomenda realizado por (nome do usuario)!`,
+      mensagem: `${order.descricao}`,
+      tipo: "ENCOMENDA",
+      destino: { tipo: "ADMIN" },
+      referencia: `${order.imagemReferencia}`,
+      url: `https://sala-magica.vercel.app/encomendas/${order.id}`,
+    }, true);
+    console.info("notificação de nova encomenda criada")
+  }
 
+  async createRespostaEncomendaNotificacao(payload: OrderAwnserNotificationPayload) {
+    // validações para campos vazios
+    if (payload.id_encomenda == undefined || payload.id_usuario == undefined || payload.mensagem == undefined) {
+      throw new Error("Campos obrigatórios ausentes na notificação de resposta de encomenda");
+    }
+
+    await this.create({
+      titulo: `Sua encomenda foi atualizada!`,
+      mensagem: `
+      Acompanhe o status da sua encomenda #${payload.id_encomenda} \n
+      Resposta: ${payload.mensagem}\n
+      Obrigado por escolher a Sala Mágica!
+      `,
+      tipo: "ENCOMENDA",
+      destino: { tipo: "USUARIO", usuario_ref: idToDocumentRef(payload.id_usuario as string, COLLECTIONS.usuarios) },
+      referencia: `${payload.id_encomenda}`,
+      url: `https://sala-magica.vercel.app/encomendas/${payload.id_encomenda}`,
+    }, true);
+  }
+
+  async getNotificationsByUserId(id_usuario: string, lidas: boolean = false): Promise<Notification[]> {
+    let querySnapshot = await db
+      .collection(COLLECTION)
+      .where("destino.tipo", "==", "USUARIO")
+      .where("destino.usuario_ref", "==", idToDocumentRef(id_usuario, COLLECTIONS.usuarios))
+      .orderBy("dataNotificacao", "desc")
+    .get();
+
+    if (lidas) querySnapshot.query.where("lido", "==", true)
+
+    const notificacoes: Notification[] = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data() as Notification,
+    }));
+    return notificacoes;
   }
 }
 
