@@ -1,18 +1,23 @@
 import admin from "firebase-admin";
 import dotenv from "dotenv";
 dotenv.config();
-import serviceAccount from "../../secrets/magic-room-firebase-adminsdk.json";
 
-function initFirebaseApp() {
-  if (admin.apps.length) return admin.app();
+export function initFirebaseApp() {
+  if (admin.apps.length > 0) return admin.app();
 
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT não encontrada!");
+
+  const serviceAccount = JSON.parse(raw);
+
+  if (serviceAccount.private_key) {
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+  }
 
   return admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+    credential: admin.credential.cert(serviceAccount),
     projectId: process.env.FIREBASE_PROJECT_ID,
   });
-
-
 }
 
 const app = initFirebaseApp();

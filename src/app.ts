@@ -4,10 +4,12 @@ import productRoutes from "./routes/products.router";
 import orderRouter from "./routes/order.router"
 import favoriteRouter from "./routes/favorite.router"
 import notificationRouter from "./routes/notification.router"
+import { corsConfig } from "./config/cors";
 
 const app = express();
 
-app.use(cors());
+// app.use(cors());
+app.use(corsConfig);
 app.use(express.json());
 
 // rotas
