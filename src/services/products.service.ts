@@ -163,3 +163,10 @@ export const deleteProduct = async (product_id: string) => {
   // por enquanto excluindo apenas o produto
   await db.collection(COLLECTION).doc(product_id).delete();
 }
+
+export const countProducts = async () => {
+  const totalQuery = db.collection(COLLECTION);
+  const snapshot = await totalQuery.count().get()
+
+  return snapshot.data().count
+}

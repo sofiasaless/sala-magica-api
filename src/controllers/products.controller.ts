@@ -105,3 +105,12 @@ export const deleteProduct = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Erro ao deletar produto" });
   }
 }
+
+export const countTotalProducts = async (req: Request, res: Response) => {
+  try {
+    const total = await ProductService.countProducts()
+    res.status(200).json({ total: total })
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao contar total de produtos" })
+  }
+}
