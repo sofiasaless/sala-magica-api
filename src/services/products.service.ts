@@ -59,18 +59,18 @@ export const createProduct = async (payload: Omit<Product, "id">): Promise<Produ
 export const updateProduct = async (id_produto: string, payload: Partial<Product>): Promise<void> => {
   const produtoRef = db.collection(COLLECTION).doc(id_produto);
   const produtoDoc = await produtoRef.get();
-  
+
   if (!produtoDoc.exists) throw new Error("Produto não encontrado");
-  
+
   // assegurando que determinados campos nao sejam atualizados mesmo que sejam enviados no payload
   const camposNaoPermitidos = ["id", "dataAnuncio"];
   for (const campo of camposNaoPermitidos) {
     if (campo in payload) delete (payload as any)[campo];
   }
-  
+
   await produtoRef.update({
     ...payload
-  });  
+  });
 }
 
 
@@ -83,7 +83,7 @@ export const listProducts = async (): Promise<Product[]> => {
   const snap = await query.orderBy("dataAnuncio", "desc").get();
 
   const items: Product[] = snap.docs.map(doc => docToProduto(doc.id, doc.data()));
-  
+
   /* também funciona
   const cityRef = db.collection(COLLECTION)
   const docs = (await cityRef.get()).docs;
@@ -104,41 +104,52 @@ export const getProductById = async (product_id: string): Promise<Product> => {
  * @param startAfterId 
  * @returns 
 */
-export const pageProducts = async (
-  limit: number,
-  categoria: string,
-  ordem: string,
-  startAfterId?: string
-) => {
-  let query = db.collection(COLLECTION).orderBy("dataAnuncio", "desc").limit(limit);
+export const pageProducts = async ({
+  limit,
+  categoria,
+  ordem,
+  cursor,
+  cursorPrev
+}: {
+  limit: number;
+  categoria?: string;
+  ordem?: string;
+  cursor?: string;      // próximo
+  cursorPrev?: string;  // anterior
+}) => {
+  let query = db.collection(COLLECTION).orderBy(ordem ?? "dataAnuncio", "desc");
 
-  // se o cliente mandou o último ID da página anterior, usa startAfter, quer dizer que ele paginou para a próxima página
-  if (startAfterId) {
-    const lastDoc = await db.collection(COLLECTION).doc(startAfterId).get();
-    if (lastDoc.exists) {
-      query = query.startAfter(lastDoc);
-    }
+  if (categoria) query = query.where("categoria", "==", categoria);
+
+  let snapshot;
+
+  // Indo para a próxima página
+  if (cursor) {
+    const cursorDoc = await db.collection(COLLECTION).doc(cursor).get();
+    snapshot = await query.startAfter(cursorDoc).limit(limit).get();
+  }
+  // Voltando para a página anterior
+  else if (cursorPrev) {
+    const cursorDoc = await db.collection(COLLECTION).doc(cursorPrev).get();
+    snapshot = await query.endBefore(cursorDoc).limitToLast(limit).get();
+  }
+  // Primeira página
+  else {
+    snapshot = await query.limit(limit).get();
   }
 
-  // filtrando caso seja passado query pela requisição
-  if (categoria != undefined) query = query.where("categoria", "==", categoria)
-  if (ordem != undefined) query = query.orderBy(ordem, "desc")
-
-  const snapshot = await query.get();
-
-  // mapeia para objetos Produto
-  const produtos: Product[] = snapshot.docs.map((doc) => ({
+  const produtos = snapshot.docs.map(doc => ({
     id: doc.id,
-    ...(doc.data() as Product),
+    ...(doc.data() as Product)
   }));
 
-  // captura o último documento retornado (para o front usar na próxima página)
-  const lastVisible = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null;
+  const first = snapshot.docs[0];
+  const last = snapshot.docs[snapshot.docs.length - 1];
 
   return {
     produtos,
-    lastVisible,
-    total: snapshot.size,
+    nextCursor: last?.id ?? null,
+    prevCursor: first?.id ?? null,
   };
 };
 

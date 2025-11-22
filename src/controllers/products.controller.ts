@@ -72,16 +72,23 @@ export const updateProduct = async (req: Request, res: Response) => {
 export const pageProducts = async (req: Request, res: Response) => {
   try {
     // Extrai query params ?limit=10&startAfter=abc123
-    const limit = parseInt(req.query.limit as string) || 10;
-
+    const limit = Number(req.query.limit) || 8;
     // filtros de pesquisa
-    const categoria = req.query.categoria as string
-    const ordem = req.query.ordenar as string
+    const categoria = req.query.categoria as string | undefined;
+    const ordem = (req.query.ordem as string) ?? "dataAnuncio";
 
-    const startAfter = req.query.startAfter as string | undefined;
+    const cursor = req.query.cursor as string | undefined;      // próximo
+    const cursorPrev = req.query.cursorPrev as string | undefined; // anterior
 
-    const data = await ProductService.pageProducts(limit, categoria, ordem, startAfter);
-    res.status(200).json(data);
+    const data = await ProductService.pageProducts({
+      limit,
+      categoria,
+      ordem,
+      cursor,
+      cursorPrev,
+    });
+
+    return res.status(200).json(data);
   } catch (err) {
     console.error("pageProducts error:", err);
     res.status(500).json({ message: "Erro ao paginar produtos" });
