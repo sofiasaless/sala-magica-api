@@ -73,9 +73,14 @@ export const pageProducts = async (req: Request, res: Response) => {
   try {
     // Extrai query params ?limit=10&startAfter=abc123
     const limit = parseInt(req.query.limit as string) || 10;
+
+    // filtros de pesquisa
+    const categoria = req.query.categoria as string
+    const ordem = req.query.ordenar as string
+
     const startAfter = req.query.startAfter as string | undefined;
 
-    const data = await ProductService.pageProducts(limit, startAfter);
+    const data = await ProductService.pageProducts(limit, categoria, ordem, startAfter);
     res.status(200).json(data);
   } catch (err) {
     console.error("pageProducts error:", err);

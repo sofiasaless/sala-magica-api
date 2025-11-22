@@ -106,6 +106,8 @@ export const getProductById = async (product_id: string): Promise<Product> => {
 */
 export const pageProducts = async (
   limit: number,
+  categoria: string,
+  ordem: string,
   startAfterId?: string
 ) => {
   let query = db.collection(COLLECTION).orderBy("dataAnuncio", "desc").limit(limit);
@@ -117,6 +119,10 @@ export const pageProducts = async (
       query = query.startAfter(lastDoc);
     }
   }
+
+  // filtrando caso seja passado query pela requisição
+  if (categoria != undefined) query = query.where("categoria", "==", categoria)
+  if (ordem != undefined) query = query.orderBy(ordem, "desc")
 
   const snapshot = await query.get();
 
