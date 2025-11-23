@@ -32,6 +32,8 @@ export const listAllFavorites = async (req: Request, res: Response) => {
 
 export const listFavoritesByUser = async (req: Request, res: Response) => {
   try {
+    const headers = req.headers.authorization
+
     const id_usuario = req.params.id;
     const favorites = await FavoriteService.getFavoritesByUserId(id_usuario);
     res.status(200).json(favorites);
