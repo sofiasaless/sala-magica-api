@@ -72,11 +72,23 @@ export const updateProduct = async (req: Request, res: Response) => {
 export const pageProducts = async (req: Request, res: Response) => {
   try {
     // Extrai query params ?limit=10&startAfter=abc123
-    const limit = parseInt(req.query.limit as string) || 10;
-    const startAfter = req.query.startAfter as string | undefined;
+    const limit = Number(req.query.limit) || 8;
+    // filtros de pesquisa
+    const categoria = req.query.categoria as string | undefined;
+    const ordem = (req.query.ordem as string) ?? "dataAnuncio";
 
-    const data = await ProductService.pageProducts(limit, startAfter);
-    res.status(200).json(data);
+    const cursor = req.query.cursor as string | undefined;      // próximo
+    const cursorPrev = req.query.cursorPrev as string | undefined; // anterior
+
+    const data = await ProductService.pageProducts({
+      limit,
+      categoria,
+      ordem,
+      cursor,
+      cursorPrev,
+    });
+
+    return res.status(200).json(data);
   } catch (err) {
     console.error("pageProducts error:", err);
     res.status(500).json({ message: "Erro ao paginar produtos" });
@@ -91,5 +103,14 @@ export const deleteProduct = async (req: Request, res: Response) => {
   } catch (err) {
     console.error("deleteProduct error:", err);
     res.status(500).json({ message: "Erro ao deletar produto" });
+  }
+}
+
+export const countTotalProducts = async (req: Request, res: Response) => {
+  try {
+    const total = await ProductService.countProducts()
+    res.status(200).json({ total: total })
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao contar total de produtos" })
   }
 }
