@@ -1,24 +1,25 @@
 import admin from "firebase-admin";
 import { Request, Response, NextFunction } from "express";
 
-export async function authMiddleware(requiredRole?: "admin" | "user") {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const token = getTokenFromHeaders(req);
 
+export function authMiddleware(requiredRole?: "admin" | "user") {
+  return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const token = getTokenFromHeaders(req);
+
       const decoded = await admin.auth().verifyIdToken(token);
 
-      // anexar usuário à requisição
-      (req as any).user = decoded;
+      req.user = {
+        uid: decoded.uid,
+        email: decoded.email,
+        role: decoded.role,
+      };
 
-      // verificar role se necessário
-      if (requiredRole && decoded.role !== requiredRole) {
-        return res.status(403).json({ error: "Permissão negada" });
-      }
+      if (requiredRole && decoded.role !== requiredRole) return res.status(403).json({ error: "Acesso negado." });
 
       return next();
-    } catch (err) {
-      return res.status(401).json({ error: "Token inválido" });
+    } catch (err: any) {
+      return res.status(401).json({ error: err.message });
     }
   };
 }

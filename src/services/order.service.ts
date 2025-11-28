@@ -1,4 +1,3 @@
-import admin from "firebase-admin";
 import { Order, OrderUpdateRequestBody } from "../types/order.type"
 import { db } from "../config/firebase";
 import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
@@ -19,12 +18,12 @@ function docToOrder(id: string, data: FirebaseFirestore.DocumentData): Order {
     imagemReferencia: data.imagemReferencia,
     pendente: data.pendente,
     referencias: data.referencias,
-    solicitante: data.solicitante,
+    solicitante: data.solicitante?.id || '',
     dataEncomenda: data.dataEncomenda && data.dataEncomenda.toDate ? data.dataEncomenda.toDate() : new Date(data.dataEncomenda),
   };
 }
 
-export const listOrders = async (): Promise<Order[]> => {
+export const getOrders = async (): Promise<Order[]> => {
   let query: FirebaseFirestore.Query = db.collection(COLLECTION)
   const snap = await query.orderBy("dataEncomenda", "desc").get();
 
@@ -32,18 +31,15 @@ export const listOrders = async (): Promise<Order[]> => {
   return encomendas
 }
 
-export const createOrder = async (payload: Omit<Order, "id">): Promise<Order> => {
+export const createOrder = async (id_usuario: string, payload: Partial<Order>): Promise<Order> => {
   // validações básicas (pode melhorar com zod/joi)
   if (payload.descricao === undefined) throw new Error("descricao é obrigatória");
-  if (payload.solicitante === undefined) throw new Error("solicitante é obrigatório");
   if (payload.categoria === undefined) throw new Error("categoria é obrigatória");
-
-  if (!payload.dataEncomenda) payload.dataEncomenda = new Date();
 
   const dataToSave = {
     ...payload,
-    solicitante: idToDocumentRef(payload.solicitante as string, COLLECTIONS.encomendas),
-    dataEncomenda: admin.firestore.Timestamp.fromDate(new Date(payload.dataEncomenda)),
+    solicitante: idToDocumentRef(id_usuario as string, COLLECTIONS.usuarios),
+    dataEncomenda: new Date(),
   };
 
   const ref = await db.collection(COLLECTION).add(dataToSave);
@@ -51,7 +47,7 @@ export const createOrder = async (payload: Omit<Order, "id">): Promise<Order> =>
   const encomenda = docToOrder(doc.id, doc.data()!);
 
   // disparando o envento de nova encomenda criada
-  eventBus.emit(eventNames.ENCOMENDA_CRIADA, encomenda);
+  await eventBus.emit(eventNames.ENCOMENDA_CRIADA, encomenda);
   
   return encomenda
 }
@@ -82,4 +78,16 @@ export const getOrderById = async (order_id: string): Promise<Order> => {
   const doc = await db.collection(COLLECTION).doc(order_id).get();
   if (!doc.exists) throw new Error("Encomenda não encontrada");
   return docToOrder(doc.id, doc.data()!);
+}
+
+export const getOrdersByUserId = async (id_usuario: string): Promise<Order[]> => {
+  const ordersSnap = await db.collection(COLLECTION).where("solicitante", "==", idToDocumentRef(id_usuario, COLLECTIONS.usuarios)).get()
+
+  if (ordersSnap.empty) return []
+
+  const encomendasEncontradas: Order[] = ordersSnap.docs.map((order) => {
+    return docToOrder(order.id, order.data())
+  })
+
+  return encomendasEncontradas;
 }
