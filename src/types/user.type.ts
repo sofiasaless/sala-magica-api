@@ -8,3 +8,11 @@ export type User = {
   photoURL: string,
   disabled: boolean
 }
+
+export type UserFirestoreDoc = {
+  nome?: string,
+  email?: string,
+  foto_perfil?: string,
+  telefone?: string,
+  data_criacao: Date
+}
