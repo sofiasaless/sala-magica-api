@@ -1,11 +1,15 @@
 import { Router } from "express";
-import { createFavorite, deleteFavorite, listAllFavorites, listFavoritesByUser } from "../controllers/favorite.controller";
+import { authMiddleware } from "../auth/authMiddleware";
+import { createFavorite, deleteFavorite, favoriteAction, findAllFavorites, findFavoritesProductsByUser } from "../controllers/favorite.controller";
 
 const router = Router()
 
-router.get("/", listAllFavorites);
-router.get("/:id", listFavoritesByUser);
-router.post("/create", createFavorite);
-router.delete("/delete/:id", deleteFavorite);
+router.get("/admin/findAll", authMiddleware('admin'), findAllFavorites);
+
+// rotas para usuarios que estiverem autenticados
+router.get("/findAll", authMiddleware('user'), findFavoritesProductsByUser);
+router.post("/create/:idProduto", authMiddleware('user'), createFavorite);
+router.delete("/delete/:idProduto", authMiddleware('user'), deleteFavorite);
+router.post("/favAction/:idProduto", authMiddleware('user'), favoriteAction);
 
 export default router
