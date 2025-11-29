@@ -1,5 +1,5 @@
-import { Order, OrderUpdateRequestBody } from "../types/order.type"
 import { db } from "../config/firebase";
+import { Order } from "../types/order.type";
 import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
 import { eventBus, eventNames } from "./eventBus";
 
@@ -38,6 +38,7 @@ export const createOrder = async (id_usuario: string, payload: Partial<Order>): 
 
   const dataToSave = {
     ...payload,
+    pendente: true,
     solicitante: idToDocumentRef(id_usuario as string, COLLECTIONS.usuarios),
     dataEncomenda: new Date(),
   };
