@@ -1,9 +1,10 @@
 import admin from "firebase-admin";
 import { db } from "../config/firebase";
-import { Product, ProductUpdateRequestBody } from "../types/product.type";
+import { Product } from "../types/product.type";
+import { COLLECTIONS } from "../utils/firestore.util";
 import { eventBus, eventNames } from "./eventBus";
 
-const COLLECTION = "produtos";
+const COLLECTION = COLLECTIONS.produtos;
 
 /**
  * Converte documento Firestore para Produto (inclui id e converte Timestamp -> Date)

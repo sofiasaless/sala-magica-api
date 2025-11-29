@@ -4,15 +4,10 @@ import { Favorite } from "../types/favorite.type";
 
 export const createFavorite = async (req: Request, res: Response) => {
   try {
-    // posteriormente o id do usuario terá de vir pelo token de autenticação, e não pelo body
-    // .......
+    const userId = req.user?.uid!
+    const idProduto = req.params.idProduto;
 
-    const body = req.body as Omit<Favorite, "id_favorito">;
-
-    // data vindo automaticamente no backend
-    body.data_curtida = new Date();
-
-    const created = await FavoriteService.createFavorite(body);  
+    const created = await FavoriteService.createFavorite(userId, idProduto);
     res.status(201).json(created);
   } catch (err: any) {
     console.error("createFavorite error:", err);
@@ -20,7 +15,7 @@ export const createFavorite = async (req: Request, res: Response) => {
   }
 }
 
-export const listAllFavorites = async (req: Request, res: Response) => {
+export const findAllFavorites = async (req: Request, res: Response) => {
   try {
     const favorites = await FavoriteService.getAllFavorites();
     res.status(200).json(favorites);
@@ -30,12 +25,10 @@ export const listAllFavorites = async (req: Request, res: Response) => {
   }
 }
 
-export const listFavoritesByUser = async (req: Request, res: Response) => {
+export const findFavoritesProductsByUser = async (req: Request, res: Response) => {
   try {
-    const headers = req.headers.authorization
-
-    const id_usuario = req.params.id;
-    const favorites = await FavoriteService.getFavoritesByUserId(id_usuario);
+    const userId = req.user?.uid!;
+    const favorites = await FavoriteService.getFavoritesProductsByUserId(userId);
     res.status(200).json(favorites);
   } catch (err) {
     console.error("listFavoritesByUser error:", err);
@@ -45,11 +38,25 @@ export const listFavoritesByUser = async (req: Request, res: Response) => {
 
 export const deleteFavorite = async (req: Request, res: Response) => {
   try {
-    const body = req.body as Favorite;
-    await FavoriteService.deleteFavorite(body);
+    const userId = req.user?.uid!
+    const idProduto = req.params.idProduto;
+    await FavoriteService.deleteFavorite(userId, idProduto);
     res.status(200).json({ message: "Favorito deletado com sucesso" });
   } catch (err: any) {
     console.error("deleteFavorite error:", err);
     res.status(400).json({ message: err.message || "Erro ao deletar favorito" });
+  }
+}
+
+export const favoriteAction = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.uid!
+    const idProduto = req.params.idProduto;
+
+    const created = await FavoriteService.doFavoriteAction(userId, idProduto);
+    res.status(201).json(created);
+  } catch (err: any) {
+    console.error("createFavorite error:", err);
+    res.status(400).json({ message: err.message || "Erro ao criar favorito" });
   }
 }

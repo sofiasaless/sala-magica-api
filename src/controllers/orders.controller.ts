@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import * as OrderService from '../services/order.service'
-import { Order, OrderUpdateRequestBody } from "../types/order.type";
+import * as OrderService from '../services/order.service';
+import { Order } from "../types/order.type";
 
-export const listOrder = async (req: Request, res: Response) => {
+export const findOrders = async (req: Request, res: Response) => {
   try {
-    const orders = await OrderService.listOrders();
+    const orders = await OrderService.getOrders();
     res.status(200).json(orders)
   } catch (err) {
     console.error("listOders error:", err);
@@ -23,28 +23,21 @@ export const findOrderById = async (req: Request, res: Response) => {
   }
 }
 
+export const findOrdersByUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.uid as string;
+    const result = await OrderService.getOrdersByUserId(userId);
+    res.status(200).json(result);
+  } catch (err: any) {
+    res.status(400).json({ message: err.message || `Erro ao buscar encomendas do usuário` });
+  }
+}
+
 export const createOrder = async (req: Request, res: Response) => {
   try {
     const body = req.body as Partial<Order>;
-
-    // converter campos conforme necessário (ex: dataAnuncio)
-    if (body.dataEncomenda && typeof body.dataEncomenda === "string") {
-      body.dataEncomenda = new Date(body.dataEncomenda);
-    }
-
-    // preencher defaults mínimos
-    const toCreate: Omit<Order, "id"> = {
-      categoria: body.categoria || "",
-      descricao: body.descricao || "",
-      pendente: true,
-      solicitante: body.solicitante || "",
-      altura: body.altura,
-      comprimento: body.comprimento,
-      imagemReferencia: body.imagemReferencia,
-      referencias: body.referencias || [],
-      dataEncomenda: body.dataEncomenda ?? new Date(),
-    };
-    const created = await OrderService.createOrder(toCreate);
+    const userId = req.user?.uid as string;
+    const created = await OrderService.createOrder(userId, body);
     res.status(201).json(created);
   } catch (err: any) {
     console.error("createOrder error:", err);

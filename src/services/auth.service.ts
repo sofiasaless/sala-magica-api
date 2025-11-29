@@ -1,6 +1,9 @@
 import { CreateRequest, getAuth, UserRecord } from "firebase-admin/auth"
-import { User } from "../types/user.type"
-import { adminAuth } from "../config/firebase";
+import { User, UserFirestoreDoc } from "../types/user.type"
+import { adminAuth, db } from "../config/firebase";
+import { COLLECTIONS } from "../utils/firestore.util";
+
+const COLLECTION = COLLECTIONS.usuarios;
 
 function userRecordToUserType(userToConvert: UserRecord) {
   const userConverted: User = {
@@ -35,7 +38,18 @@ export const createNewUser = async (user: CreateRequest) => {
     .then(async (userRecord) => {
       // definr role padrão
       await setUserRole(userRecord.uid, "user")
-      console.info('usuario criado com sucesso: ', userRecord)
+      
+      // salvando o usuario criado no firestore
+      const usuarioFirestore: UserFirestoreDoc = {
+        email: (userRecord.email === undefined)?'':userRecord.email,
+        foto_perfil: (userRecord.photoURL === undefined)?'':userRecord.photoURL,
+        nome: (userRecord.displayName === undefined)?'':userRecord.displayName,
+        telefone: (userRecord.phoneNumber === undefined)?'':userRecord.phoneNumber,
+        data_criacao: new Date()
+      }
+      const usuRef = db.collection(COLLECTION).doc(userRecord.uid)
+      await usuRef.set(usuarioFirestore);
+
       return userRecordToUserType(userRecord)
     })
     .catch((error) => {
@@ -48,7 +62,6 @@ export const verifyIdToken = async (token: string) => {
   return await getAuth()
     .verifyIdToken(token)
     .then((decodedToken) => {
-      const uid = decodedToken.uid;
       console.info('email do usuario do token ', decodedToken.email)
       return decodedToken.email
     })
