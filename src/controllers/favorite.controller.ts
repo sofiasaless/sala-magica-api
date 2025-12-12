@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import * as FavoriteService from "../services/favorite.service";
-import { Favorite } from "../types/favorite.type";
 
 export const createFavorite = async (req: Request, res: Response) => {
   try {
@@ -30,9 +29,9 @@ export const findFavoritesProductsByUser = async (req: Request, res: Response) =
     const userId = req.user?.uid!;
     const favorites = await FavoriteService.getFavoritesProductsByUserId(userId);
     res.status(200).json(favorites);
-  } catch (err) {
+  } catch (err: any) {
     console.error("listFavoritesByUser error:", err);
-    res.status(500).json({ message: "Erro ao listar favoritos do usuário" });
+    res.status(500).json({ message: `Erro ao listar favoritos do usuário ${err.message}` });
   }
 }
 
@@ -54,7 +53,7 @@ export const favoriteAction = async (req: Request, res: Response) => {
     const idProduto = req.params.idProduto;
 
     const created = await FavoriteService.doFavoriteAction(userId, idProduto);
-    res.status(201).json(created);
+    res.status(200).json(created);
   } catch (err: any) {
     console.error("createFavorite error:", err);
     res.status(400).json({ message: err.message || "Erro ao criar favorito" });

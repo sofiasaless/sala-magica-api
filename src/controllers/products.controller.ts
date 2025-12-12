@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import * as ProductService from "../services/products.service";
-import { Product, ProductUpdateRequestBody } from "../types/product.type";
+import { Product } from "../types/product.type";
 
 export const listProducts = async (req: Request, res: Response) => {
   try {
@@ -17,9 +17,8 @@ export const findProductById = async (req: Request, res: Response) => {
     const productId = req.params.id as string;
     const product = await ProductService.getProductById(productId);
     res.status(200).json(product);
-  } catch (err) {
-    console.error("findProductById error:", err);
-    res.status(500).json({ message: "Erro ao buscar produto" });
+  } catch (err: any) {
+    res.status(400).json({ message: `Erro ao buscar produto: ${err.message}` });
   }
 }
 
@@ -31,26 +30,12 @@ export const createProduct = async (req: Request, res: Response) => {
     if (body.dataAnuncio && typeof body.dataAnuncio === "string") {
       body.dataAnuncio = new Date(body.dataAnuncio);
     }
-    // preencher defaults mínimos
-    const toCreate: Omit<Product, "id"> = {
-      titulo: body.titulo || "",
-      descricao: body.descricao || "",
-      preco: body.preco ?? 0,
-      modelagem: body.modelagem || "",
-      categoria: body.categoria || "",
-      altura: body.altura || 0,
-      comprimento: body.comprimento || 0,
-      imagemCapa: body.imagemCapa || "",
-      imagens: body.imagens || [],
-      ativo: body.ativo ?? true,
-      dataAnuncio: body.dataAnuncio ?? new Date(),
-    };
 
-    const created = await ProductService.createProduct(toCreate);
+    const created = await ProductService.createProduct(body);
     res.status(201).json(created);
   } catch (err: any) {
     console.error("createProduct error:", err);
-    res.status(400).json({ message: err.message || "Erro ao criar produto" });
+    res.status(400).json({ message: err.message || `Erro ao criar produto: ${err.message}` });
   }
 };
 
@@ -59,13 +44,12 @@ export const updateProduct = async (req: Request, res: Response) => {
     const id_produto = req.params.id as string;
     const body = req.body as Partial<Product>;
 
-    if (id_produto === "") return res.status(400).json({ error: "ID do produto é obrigatório" });
+    if (id_produto === "") return res.status(400).json({ error: "ID do produto é obrigatório para atualizar" });
 
     await ProductService.updateProduct(id_produto, body);
     res.sendStatus(200);
   } catch (err: any) {
-    console.error("createProduct error:", err);
-    res.status(400).json({ message: err.message || "Erro ao criar produto" });
+    res.status(400).json({ message: err.message || "Erro ao atualizar produto produto" });
   }
 };
 
@@ -89,9 +73,8 @@ export const pageProducts = async (req: Request, res: Response) => {
     });
 
     return res.status(200).json(data);
-  } catch (err) {
-    console.error("pageProducts error:", err);
-    res.status(500).json({ message: `Erro ao paginar produtos ${err}` });
+  } catch (err: any) {
+    res.status(400).json({ message: `Erro ao paginar produtos ${err.message}` });
   }
 }
 
@@ -102,7 +85,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
     res.sendStatus(200);
   } catch (err) {
     console.error("deleteProduct error:", err);
-    res.status(500).json({ message: "Erro ao deletar produto" });
+    res.status(400).json({ message: "Erro ao deletar produto" });
   }
 }
 
@@ -111,6 +94,6 @@ export const countTotalProducts = async (req: Request, res: Response) => {
     const total = await ProductService.countProducts()
     res.status(200).json({ total: total })
   } catch (error) {
-    res.status(500).json({ message: "Erro ao contar total de produtos" })
+    res.status(400).json({ message: "Erro ao contar total de produtos" })
   }
 }
