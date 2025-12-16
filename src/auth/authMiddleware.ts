@@ -15,11 +15,11 @@ export function authMiddleware(requiredRole?: "admin" | "user") {
         role: decoded.role,
       };
 
-      if (requiredRole && decoded.role !== requiredRole) return res.status(403).json({ error: "Acesso negado." });
+      if (requiredRole && decoded.role !== requiredRole) return res.status(403).json({ message: "Acesso negado." });
 
       return next();
     } catch (err: any) {
-      return res.status(401).json({ error: err.message });
+      return res.status(401).json({ message: err.message });
     }
   };
 }

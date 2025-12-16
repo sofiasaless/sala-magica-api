@@ -8,18 +8,7 @@ export type Order = {
   descricao: string,
   pendente: boolean,
   imagemReferencia?: string[],
-  referencias?: [],
+  referencias?: string,
   solicitante: string | DocumentReference,
   dataEncomenda: Date
-}
-
-export type OrderUpdateRequestBody = {
-  id: string,
-  categoria?: string,
-  altura?: number,
-  comprimento?: number,
-  descricao?: string,
-  pendente?: boolean,
-  imagemReferencia?: string,
-  referencias?: [],
 }

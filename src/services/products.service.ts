@@ -1,7 +1,6 @@
-import admin from "firebase-admin";
 import { db } from "../config/firebase";
 import { Product } from "../types/product.type";
-import { COLLECTIONS } from "../utils/firestore.util";
+import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
 import { eventBus, eventNames } from "./eventBus";
 
 const COLLECTION = COLLECTIONS.produtos;
@@ -19,6 +18,7 @@ function docToProduto(id: string, data: FirebaseFirestore.DocumentData): Product
     categoria: data.categoria,
     altura: data.altura,
     comprimento: data.comprimento,
+    categoria_reference: data.categoria_reference?.id || '',
     imagemCapa: data.imagemCapa,
     imagens: data.imagens || [],
     ativo: data.ativo === undefined ? true : data.ativo,
@@ -30,16 +30,31 @@ function docToProduto(id: string, data: FirebaseFirestore.DocumentData): Product
  * cria produto
  * - aceita Product onde dataAnuncio é Date ou string ISO; armazenamos como Timestamp
  */
-export const createProduct = async (payload: Omit<Product, "id">): Promise<Product> => {
+export const createProduct = async (payload: Partial<Product>): Promise<Product> => {
+  // preencher defaults mínimos
+  const toCreate: Omit<Product, "id"> = {
+    titulo: payload.titulo || "",
+    descricao: payload.descricao || "",
+    preco: payload.preco ?? 0,
+    modelagem: payload.modelagem || "",
+    categoria: payload.categoria || "",
+    categoria_reference: idToDocumentRef(payload.categoria_reference as string, COLLECTIONS.categorias),
+    altura: payload.altura || 0,
+    comprimento: payload.comprimento || 0,
+    imagemCapa: payload.imagemCapa || "",
+    imagens: payload.imagens || [],
+    ativo: payload.ativo ?? true,
+    dataAnuncio: payload.dataAnuncio ?? new Date(),
+  };
+
   // validações básicas (pode melhorar com zod/joi)
-  if (!payload.titulo) throw new Error("titulo é obrigatório");
-  if (payload.preco === undefined || payload.preco === null) throw new Error("preco é obrigatório");
-  if (!payload.dataAnuncio) payload.dataAnuncio = new Date();
+  if (!toCreate.titulo || toCreate.titulo === '') throw new Error("Campo título é obrigatório");
+  if (toCreate.preco === undefined || toCreate.preco === null) throw new Error("Campo preço é obrigatório");
+  if (!toCreate.dataAnuncio) toCreate.dataAnuncio = new Date();
 
   // converter dataAnuncio para Timestamp do Firestore
   const dataToSave = {
-    ...payload,
-    dataAnuncio: admin.firestore.Timestamp.fromDate(new Date(payload.dataAnuncio)),
+    ...payload
   };
 
   const ref = await db.collection(COLLECTION).add(dataToSave);
@@ -95,7 +110,7 @@ export const listProducts = async (): Promise<Product[]> => {
 
 export const getProductById = async (product_id: string): Promise<Product> => {
   const doc = await db.collection(COLLECTION).doc(product_id).get();
-  if (!doc.exists) throw new Error("Produto não encontrado");
+  if (!doc.exists) throw new Error("Produto não encontrado por id");
   return docToProduto(doc.id, doc.data()!);
 }
 
