@@ -91,7 +91,8 @@ export const deleteProduct = async (req: Request, res: Response) => {
 
 export const countTotalProducts = async (req: Request, res: Response) => {
   try {
-    const total = await ProductService.countProducts()
+    const categoria_filtro = req.query.categoria as string
+    const total = await ProductService.countProducts(categoria_filtro)
     res.status(200).json({ total: total })
   } catch (error) {
     res.status(400).json({ message: "Erro ao contar total de produtos" })
