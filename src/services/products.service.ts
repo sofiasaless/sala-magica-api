@@ -1,6 +1,6 @@
 import { db } from "../config/firebase";
 import { Product } from "../types/product.type";
-import { COLLECTIONS } from "../utils/firestore.util";
+import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
 import { eventBus, eventNames } from "./eventBus";
 
 const COLLECTION = COLLECTIONS.produtos;
@@ -18,6 +18,7 @@ function docToProduto(id: string, data: FirebaseFirestore.DocumentData): Product
     categoria: data.categoria,
     altura: data.altura,
     comprimento: data.comprimento,
+    categoria_reference: data.categoria_reference?.id || '',
     imagemCapa: data.imagemCapa,
     imagens: data.imagens || [],
     ativo: data.ativo === undefined ? true : data.ativo,
@@ -37,6 +38,7 @@ export const createProduct = async (payload: Partial<Product>): Promise<Product>
     preco: payload.preco ?? 0,
     modelagem: payload.modelagem || "",
     categoria: payload.categoria || "",
+    categoria_reference: idToDocumentRef(payload.categoria_reference as string, COLLECTIONS.categorias),
     altura: payload.altura || 0,
     comprimento: payload.comprimento || 0,
     imagemCapa: payload.imagemCapa || "",
