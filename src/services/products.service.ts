@@ -87,6 +87,13 @@ export const updateProduct = async (id_produto: string, payload: Partial<Product
   await produtoRef.update({
     ...payload
   });
+  
+  // se houver atualização da categoria, deve ser feita por último por se tratar de um reference
+  if (payload.categoria_reference) {
+    await produtoRef.update({
+      categoria_reference: idToDocumentRef(payload.categoria_reference as string, COLLECTIONS.categorias)
+    });
+  }
 }
 
 
@@ -135,7 +142,7 @@ export const pageProducts = async ({
 }) => {
   let query = db.collection(COLLECTION).orderBy(ordem ?? "dataAnuncio", "desc");
 
-  if (categoria) query = query.where("categoria", "==", categoria);
+  if (categoria) query = query.where("categoria_reference", "==", idToDocumentRef(categoria, COLLECTIONS.categorias));
 
   let snapshot;
 
@@ -180,8 +187,11 @@ export const deleteProduct = async (product_id: string) => {
   await db.collection(COLLECTION).doc(product_id).delete();
 }
 
-export const countProducts = async () => {
-  const totalQuery = db.collection(COLLECTION);
+export const countProducts = async (categoria?: string) => {
+  let totalQuery: FirebaseFirestore.Query = db.collection(COLLECTION);
+
+  if (categoria) totalQuery = totalQuery.where("categoria_reference", "==", idToDocumentRef(categoria, COLLECTIONS.categorias));
+
   const snapshot = await totalQuery.count().get()
 
   return snapshot.data().count

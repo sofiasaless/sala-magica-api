@@ -6,7 +6,9 @@ export enum COLLECTIONS {
   curtidas = "curtidas",
   encomendas = "encomendas",
   usuarios = "usuarios",
-  categorias = "categorias"
+  categorias = "categorias",
+  dicionario = "dicionario-pesquisa",
+  carrinho = "carrinho"
 }
 
 /**

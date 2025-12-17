@@ -13,7 +13,7 @@ export type Product = {
   imagemCapa?: string;
   imagens?: string[];
   ativo: boolean;
-  dataAnuncio: Date;
+  dataAnuncio: Date | string;
 };
 
 export type ProductUpdateRequestBody = {

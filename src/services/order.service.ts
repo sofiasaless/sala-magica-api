@@ -1,5 +1,5 @@
 import { db } from "../config/firebase";
-import { Order } from "../types/order.type";
+import { Order, OrderStatus } from "../types/order.type";
 import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
 import { eventBus, eventNames } from "./eventBus";
 
@@ -12,20 +12,20 @@ function docToOrder(id: string, data: FirebaseFirestore.DocumentData): Order {
   return {
     id,
     altura: data.altura,
-    categoria: data.categoria,
+    categoria_reference: data.categoria_reference?.id || '',
     comprimento: data.comprimento,
     descricao: data.descricao,
     imagemReferencia: data.imagemReferencia,
     pendente: data.pendente,
     referencias: data.referencias,
     solicitante: data.solicitante?.id || '',
-    dataEncomenda: data.dataEncomenda && data.dataEncomenda.toDate ? data.dataEncomenda.toDate() : new Date(data.dataEncomenda),
+    data_envio: data.data_envio && data.data_envio.toDate ? data.data_envio.toDate() : new Date(data.data_envio),
   };
 }
 
 export const getOrders = async (): Promise<Order[]> => {
   let query: FirebaseFirestore.Query = db.collection(COLLECTION)
-  const snap = await query.orderBy("dataEncomenda", "desc").get();
+  const snap = await query.orderBy("data_envio", "desc").get();
 
   const encomendas: Order[] = snap.docs.map(doc => docToOrder(doc.id, doc.data()));
   return encomendas
@@ -33,14 +33,15 @@ export const getOrders = async (): Promise<Order[]> => {
 
 export const createOrder = async (id_usuario: string, payload: Partial<Order>): Promise<Order> => {
   // validações básicas (pode melhorar com zod/joi)
-  if (payload.descricao === undefined) throw new Error("descricao é obrigatória");
-  if (payload.categoria === undefined) throw new Error("categoria é obrigatória");
+  if (payload.descricao === undefined) throw new Error("Descricao é obrigatória");
+  if (payload.categoria_reference === undefined) throw new Error("Categoria é obrigatória");
 
   const dataToSave = {
     ...payload,
-    pendente: true,
+    status: 'EM ANÁLISE' as OrderStatus,
+    categoria_reference: idToDocumentRef(payload.categoria_reference as string, COLLECTIONS.categorias),
     solicitante: idToDocumentRef(id_usuario as string, COLLECTIONS.usuarios),
-    dataEncomenda: new Date(),
+    data_envio: new Date(),
   };
 
   const ref = await db.collection(COLLECTION).add(dataToSave);
@@ -61,7 +62,7 @@ export const updateOrder = async (id_encomenda: string, payload: Partial<Order>)
 
   if (!encomendaDoc.exists) throw new Error("Encomenda não encontrada");
 
-  const camposNaoPermitidos = ["id", "dataEncomenda", "solicitante"];
+  const camposNaoPermitidos = ["id", "data_envio", "solicitante"];
   for (const campo of camposNaoPermitidos) {
     if (campo in payload) delete (payload as any)[campo];
   }

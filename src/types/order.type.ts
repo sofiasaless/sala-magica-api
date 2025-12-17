@@ -2,7 +2,7 @@ import { DocumentReference } from "firebase-admin/firestore"
 
 export type Order = {
   id?: string,
-  categoria: string,
+  categoria_reference: string | DocumentReference,
   altura?: number,
   comprimento?: number,
   descricao: string,
@@ -10,5 +10,7 @@ export type Order = {
   imagemReferencia?: string[],
   referencias?: string,
   solicitante: string | DocumentReference,
-  dataEncomenda: Date
+  data_envio: Date
 }
+
+export type OrderStatus = 'EM ANÁLISE' | 'EM PRODUÇÃO' | 'CANCELADO' | 'FINALIZADO'
