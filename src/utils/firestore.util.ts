@@ -7,7 +7,8 @@ export enum COLLECTIONS {
   encomendas = "encomendas",
   usuarios = "usuarios",
   categorias = "categorias",
-  dicionario = "dicionario-pesquisa"
+  dicionario = "dicionario-pesquisa",
+  carrinho = "carrinho"
 }
 
 /**

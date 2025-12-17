@@ -7,6 +7,7 @@ import notificationRouter from "./routes/notification.router"
 import authRouter from "./routes/auth.router"
 import categoryRouter from "./routes/cateogy.router"
 import dictionaryRouter from "./routes/dictionary.router"
+import cartRouter from "./routes/cart.router"
 import { corsConfig } from "./config/cors";
 
 const app = express();
@@ -23,6 +24,7 @@ app.use("/api/notification", notificationRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/dictionary", dictionaryRouter);
+app.use("/api/cart", cartRouter);
 
 // health
 app.get("/health", (req, res) => res.json({ ok: true }));
