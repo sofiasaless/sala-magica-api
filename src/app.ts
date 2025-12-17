@@ -8,6 +8,7 @@ import authRouter from "./routes/auth.router"
 import categoryRouter from "./routes/cateogy.router"
 import dictionaryRouter from "./routes/dictionary.router"
 import cartRouter from "./routes/cart.router"
+import aiHelperRouter from "./controllers/aihelper.controller"
 import { corsConfig } from "./config/cors";
 
 const app = express();
@@ -25,6 +26,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/dictionary", dictionaryRouter);
 app.use("/api/cart", cartRouter);
+app.use("/api/ai-helper", aiHelperRouter);
 
 // health
 app.get("/health", (req, res) => res.json({ ok: true }));
