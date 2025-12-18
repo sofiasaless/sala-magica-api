@@ -1,6 +1,9 @@
-import { Request, Response } from "express";
+import { Request, Response, Router } from "express";
 import { OrderAwnserNotificationPayload } from "../types/notification.type";
 import { notificationService } from "../services/notification.service";
+
+const router = Router();
+export default router;
 
 export const createOrderAwnserNotification = async (req: Request, res: Response) => {
   try {
@@ -10,6 +13,7 @@ export const createOrderAwnserNotification = async (req: Request, res: Response)
     res.status(500).json({ message: "Erro ao criar notificação de resposta de encomenda" });
   }
 }
+router.post("/order-answer", createOrderAwnserNotification);
 
 export const listNotifications = async (req: Request, res: Response) => {
   try {
@@ -22,3 +26,4 @@ export const listNotifications = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Erro ao listar notificações do usuario" });
   } 
 }
+router.get("/list/:id", listNotifications);

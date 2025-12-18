@@ -1,49 +1,56 @@
-import { Request, Response } from "express";
-import * as OrderService from '../services/order.service';
+import { Request, Response, Router } from "express";
 import { Order } from "../types/order.type";
+import { orderService } from "../services/order.service";
+import { authMiddleware } from "../auth/authMiddleware";
+
+const router = Router()
 
 export const findOrders = async (req: Request, res: Response) => {
   try {
-    const orders = await OrderService.getOrders();
+    const orders = await orderService.getOrders();
     res.status(200).json(orders)
   } catch (err: any) {
     console.error("listOders error:", err);
     res.status(400).json({ message: `Erro ao listar produtos: ${err.message}` });
   }
 }
+router.get("/admin/list", authMiddleware('admin'), findOrders)
 
 export const findOrderById = async (req: Request, res: Response) => {
   try {
     const orderId = req.params.id as string;
-    const order = await OrderService.getOrderById(orderId);
+    const order = await orderService.getOrderById(orderId);
     res.status(200).json(order);
   } catch (err: any) {
     console.error("findOrderById error:", err);
     res.status(400).json({ message: `Erro ao obter encomenda: ${err.message}` });
   }
 }
+router.get("/find/:id", authMiddleware('user'), findOrderById)
 
 export const findOrdersByUser = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.uid as string;
-    const result = await OrderService.getOrdersByUserId(userId);
+    const result = await orderService.getOrdersByUserId(userId);
     res.status(200).json(result);
   } catch (err: any) {
     res.status(400).json({ message: err.message || `Erro ao buscar encomendas do usuário ${err.message}` });
   }
 }
+router.get("/findAll", authMiddleware('user'), findOrdersByUser)
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
     const body = req.body as Partial<Order>;
     const userId = req.user?.uid as string;
-    const created = await OrderService.createOrder(userId, body);
+    const created = await orderService.createOrder(userId, body);
     res.status(201).json(created);
   } catch (err: any) {
     console.error("createOrder error:", err);
     res.status(400).json({ message: err.message || `Erro ao criar encomenda ${err.message}` });
   }
 }
+router.post("/create", authMiddleware('user'), createOrder)
 
 export const updateOrder = async (req: Request, res: Response) => {
   try {
@@ -52,21 +59,25 @@ export const updateOrder = async (req: Request, res: Response) => {
 
     if (id_encomenda === "") return res.status(400).json({ error: `ID da encomenda é obrigatório` });
 
-    await OrderService.updateOrder(id_encomenda, body);
+    await orderService.updateOrder(id_encomenda, body);
     res.sendStatus(200);
   } catch (err: any) {
     console.error("updateOrder error:", err);
     res.status(400).json({ message: err.message || `Erro ao atualizar encomenda: ${err.message}` });
   }
 };
+router.put("/update/:id", updateOrder)
 
 export const deleteOrder = async (req: Request, res: Response) => {
   try {
     const orderId = req.params.id as string;
-    await OrderService.deleteOrder(orderId);
+    await orderService.deleteOrder(orderId);
     res.sendStatus(200);
   } catch (err: any) {
     console.error("deleteOrder error:", err);
     res.status(400).json({ message: err.message || `Erro ao deletar encomenda: ${err.message}` });
   }
 }
+router.delete("/delete/:id", deleteOrder)
+
+export default router;

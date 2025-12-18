@@ -1,5 +1,8 @@
-import { Request, Response } from "express";
+import { Request, Response, Router } from "express";
 import { carService } from "../services/cart.service";
+import { authMiddleware } from "../auth/authMiddleware";
+
+const router = Router()
 
 export const findItemsCartByUser = async (req: Request, res: Response) => {
   try {
@@ -10,6 +13,7 @@ export const findItemsCartByUser = async (req: Request, res: Response) => {
     res.status(400).json({ message: `Erro ao listar itens do carrinho: ${err.message}` });
   }
 }
+router.get("/findAll", authMiddleware('user'), findItemsCartByUser);
 
 export const deleteItemCart = async (req: Request, res: Response) => {
   try {
@@ -20,6 +24,7 @@ export const deleteItemCart = async (req: Request, res: Response) => {
     res.status(400).json({ message: err.message });
   }
 }
+router.delete("/delete/:idItem", authMiddleware('user'), deleteItemCart);
 
 export const deleteAll = async (req: Request, res: Response) => {
   try {
@@ -30,6 +35,7 @@ export const deleteAll = async (req: Request, res: Response) => {
     res.status(400).json({ message: err.message });
   }
 }
+router.delete("/deleteAll", authMiddleware('user'), deleteAll);
 
 export const cartAction = async (req: Request, res: Response) => {
   try {
@@ -43,6 +49,7 @@ export const cartAction = async (req: Request, res: Response) => {
     res.status(400).json({ message: err.message });
   }
 }
+router.post("/cartAction/:idProduto/:qtd", authMiddleware('user'), cartAction);
 
 export const updateItemQuantity = async (req: Request, res: Response) => {
   try {
@@ -55,3 +62,6 @@ export const updateItemQuantity = async (req: Request, res: Response) => {
     res.status(400).json({ message: err.message });
   }
 }
+router.put("/itemCart/update/:idItem/:qtd", authMiddleware('user'), updateItemQuantity);
+
+export default router

@@ -1,6 +1,8 @@
-import { Request, Response } from "express";
+import { Request, Response, Router } from "express";
 import { categoryService } from "../services/category.service";
 import { Category } from "../types/categoria.type";
+
+const router = Router();
 
 export const createCategory = async (req: Request, res: Response) => {
   try {
@@ -12,6 +14,7 @@ export const createCategory = async (req: Request, res: Response) => {
     res.status(400).json({ message: err.message });
   }
 }
+router.post("/create", createCategory);
 
 export const findAllCategories = async (req: Request, res: Response) => {
   try {
@@ -22,3 +25,6 @@ export const findAllCategories = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Erro ao listar favoritos" });
   }
 }
+router.get("/findAll", findAllCategories);
+
+export default router;
