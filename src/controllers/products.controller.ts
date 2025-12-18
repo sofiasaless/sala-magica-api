@@ -33,11 +33,6 @@ export const createProduct = async (req: Request, res: Response) => {
   try {
     const body = req.body as Partial<Product>;
 
-    // converter campos conforme necessário (ex: dataAnuncio)
-    if (body.dataAnuncio && typeof body.dataAnuncio === "string") {
-      body.dataAnuncio = new Date(body.dataAnuncio);
-    }
-
     const created = await productService.createProduct(body);
     res.status(201).json(created);
   } catch (err: any) {

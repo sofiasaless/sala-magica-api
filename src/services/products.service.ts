@@ -34,7 +34,7 @@ class ProductService extends PatternService {
    * cria produto
    * - aceita Product onde dataAnuncio é Date ou string ISO; armazenamos como Timestamp
    */
-  public async createProduct (payload: Partial<Product>): Promise<Product> {
+  public async createProduct (payload: Partial<Product>) {
     // preencher defaults mínimos
     const toCreate: Omit<Product, "id"> = {
       titulo: payload.titulo || "",
@@ -48,20 +48,14 @@ class ProductService extends PatternService {
       imagemCapa: payload.imagemCapa || "",
       imagens: payload.imagens || [],
       ativo: payload.ativo ?? true,
-      dataAnuncio: payload.dataAnuncio ?? new Date(),
+      dataAnuncio: new Date(),
     };
 
     // validações básicas (pode melhorar com zod/joi)
     if (!toCreate.titulo || toCreate.titulo === '') throw new Error("Campo título é obrigatório");
     if (toCreate.preco === undefined || toCreate.preco === null) throw new Error("Campo preço é obrigatório");
-    if (!toCreate.dataAnuncio) toCreate.dataAnuncio = new Date();
 
-    // converter dataAnuncio para Timestamp do Firestore
-    const dataToSave = {
-      ...payload
-    };
-
-    const ref = await this.setup().add(dataToSave);
+    const ref = await this.setup().add(toCreate);
     const doc = await ref.get();
     const produto = this.docToProduto(doc.id, doc.data()!);
 

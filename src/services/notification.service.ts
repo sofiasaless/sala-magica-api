@@ -3,6 +3,7 @@ import { db } from "../config/firebase";
 import { Notification, NotificationDestino, NotificationType, OrderAwnserNotificationPayload } from "../types/notification.type";
 import { Order } from "../types/order.type";
 import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
+import { PatternService } from "./pattern.service";
 
 interface CreateNotificationDTO {
   titulo: string;
@@ -13,28 +14,28 @@ interface CreateNotificationDTO {
   url?: string;
 }
 
-const COLLECTION = "notificacoes";
+export class NotificationService extends PatternService {
 
-export class NotificationService {
-  private collection = db.collection(COLLECTION);
+  constructor() {
+    super(COLLECTIONS.notificacoes)
+  }
 
-  async create(data: CreateNotificationDTO, createDoc = true) {
+  private async create(data: CreateNotificationDTO, createDoc = true) {
     const doc: Notification = {
       ...data,
       dataNotificacao: new Date(),
       lido: false,
     }
-    if (createDoc) await this.collection.add(doc);
+    if (createDoc) await this.setup().add(doc);
     return doc
   }
 
   async createProdutoNotificacao(produtoId: string, nomeProduto: string) {
     const doc = await this.create({
       titulo: "Novo produto disponível!",
-      mensagem: `Confira o novo produto "${nomeProduto}" agora na loja 🌸`,
+      mensagem: `Confira o novo produto "${nomeProduto}" agora na loja`,
       tipo: "PRODUTO",
       destino: {} as NotificationDestino, // destino será definido na função de criação global
-      referencia: `/produtos/${produtoId}`,
       url: `https://sala-magica.vercel.app/produtos/${produtoId}`,
     }, false);
 
@@ -46,7 +47,7 @@ export class NotificationService {
     db.collection("usuarios").get().then(async (snapshot) => {
       const batch = db.batch();
       snapshot.forEach((doc) => {
-        const notificacao_ref = db.collection(COLLECTION).doc();
+        const notificacao_ref = this.setup().doc();
         const notificacao_global: Notification = {
           ...notificacao,
           destino: { tipo: "USUARIO", usuario_ref: doc.ref },
@@ -66,8 +67,8 @@ export class NotificationService {
       mensagem: `${order.descricao}`,
       tipo: "ENCOMENDA",
       destino: { tipo: "ADMIN" },
-      referencia: `${order.imagemReferencia}`,
-      url: `https://sala-magica.vercel.app/encomendas/${order.id}`,
+      // referencia: `${order.imagemReferencia}`,
+      // url: `https://sala-magica.vercel.app/encomendas/${order.id}`,
     }, true);
     console.info("notificação de nova encomenda criada")
   }
@@ -93,8 +94,7 @@ export class NotificationService {
   }
 
   async getNotificationsByUserId(id_usuario: string, lidas: boolean = false): Promise<Notification[]> {
-    let querySnapshot = await db
-      .collection(COLLECTION)
+    let querySnapshot = await this.setup()
       .where("destino.tipo", "==", "USUARIO")
       .where("destino.usuario_ref", "==", idToDocumentRef(id_usuario, COLLECTIONS.usuarios))
       .orderBy("dataNotificacao", "desc")
