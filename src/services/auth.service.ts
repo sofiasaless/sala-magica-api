@@ -9,7 +9,7 @@ class AuthService extends PatternService {
     super(COLLECTIONS.usuarios);
   }
 
-  public async createNewUser(user: CreateRequest) {
+  public async createNewUser(user: CreateRequest, role: "admin" | "user") {
     if (user.email === undefined || user.email === '') throw new Error("Necessário preencher e-mail")
     if (user.password === undefined || user.password === '') throw new Error("Necessário preencher senha")
 
@@ -20,7 +20,7 @@ class AuthService extends PatternService {
     })
       .then(async (userRecord) => {
         // definr role padrão
-        await this.setUserRole(userRecord.uid, "user")
+        await this.setUserRole(userRecord.uid, role)
 
         // salvando o usuario criado no firestore
         const usuarioFirestore: UserFirestoreDoc = {
