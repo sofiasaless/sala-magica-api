@@ -1,17 +1,12 @@
 import { db } from "../config/firebase";
 import { Dictionary, DictionaryItem } from "../types/dictionary.type";
 import { COLLECTIONS, docToObject } from "../utils/firestore.util";
+import { PatternService } from "./pattern.service";
 
-export class DictionaryService {
-
-  private COLLECTION_NAME: string;
+export class DictionaryService extends PatternService {
 
   constructor() {
-    this.COLLECTION_NAME = COLLECTIONS.dicionario;
-  }
-
-  private setup() {
-    return db.collection(this.COLLECTION_NAME);
+    super(COLLECTIONS.dicionario)
   }
 
   private async gerarDicionario() {

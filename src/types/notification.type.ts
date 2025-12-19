@@ -30,7 +30,7 @@ export type NotificationDestino =
   | { tipo: "USUARIO"; usuario_ref: DocumentReference }
   | { tipo: "ADMIN" };
 
-export type NotificationType = "PADRAO" | "PRODUTO" | "ENCOMENDA" | "SISTEMA";
+export type NotificationType = "PRODUTO" | "ENCOMENDA" | "SISTEMA";
 
 export type OrderAwnserNotificationPayload = {
   id_encomenda: string | DocumentReference;

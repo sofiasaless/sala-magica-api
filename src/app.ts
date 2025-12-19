@@ -1,14 +1,15 @@
 import express from "express";
 import cors from "cors";
-import productRoutes from "./routes/products.router";
-import orderRouter from "./routes/order.router"
-import favoriteRouter from "./routes/favorite.router"
-import notificationRouter from "./routes/notification.router"
-import authRouter from "./routes/auth.router"
-import categoryRouter from "./routes/cateogy.router"
-import dictionaryRouter from "./routes/dictionary.router"
-import cartRouter from "./routes/cart.router"
+import productRoutes from "./controllers/products.controller";
+import orderRouter from "./controllers/orders.controller"
+import favoriteRouter from "./controllers/favorite.controller"
+import notificationRouter from "./controllers/notification.controller"
+import authRouter from "./controllers/auth.controller"
+import categoryRouter from "./controllers/category.controller"
+import dictionaryRouter from "./controllers/dictionary.controller"
+import cartRouter from "./controllers/cart.controller"
 import aiHelperRouter from "./controllers/aihelper.controller"
+import usersRouter from "./controllers/user.controller"
 import { corsConfig } from "./config/cors";
 
 const app = express();
@@ -27,6 +28,7 @@ app.use("/api/categories", categoryRouter);
 app.use("/api/dictionary", dictionaryRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/ai-helper", aiHelperRouter);
+app.use("/api/users", usersRouter);
 
 // health
 app.get("/health", (req, res) => res.json({ ok: true }));

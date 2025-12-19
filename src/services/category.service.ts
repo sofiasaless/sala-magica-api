@@ -1,17 +1,11 @@
-import { db } from "../config/firebase";
 import { Category } from "../types/categoria.type";
 import { COLLECTIONS, docToObject } from "../utils/firestore.util";
+import { PatternService } from "./pattern.service";
 
-export class CategoryService {
-
-  private COLLECTION_NAME: string;
+export class CategoryService extends PatternService {
 
   constructor() {
-    this.COLLECTION_NAME = COLLECTIONS.categorias;
-  }
-
-  private setup() {
-    return db.collection(this.COLLECTION_NAME);
+    super(COLLECTIONS.categorias);
   }
 
   public async createCategory(body: Partial<Category>) {

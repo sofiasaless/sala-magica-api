@@ -1,18 +1,12 @@
-import { db } from "../config/firebase";
+import admin from "firebase-admin";
 import { ItemCart } from "../types/cart.type";
 import { COLLECTIONS, docToObject, idToDocumentRef } from "../utils/firestore.util";
-import admin from "firebase-admin";
+import { PatternService } from "./pattern.service";
 
-export class CartService {
-
-  private COLLECTION_NAME: string;
-
+export class CartService extends PatternService {
+  
   constructor() {
-    this.COLLECTION_NAME = COLLECTIONS.carrinho;
-  }
-
-  private setup() {
-    return db.collection(this.COLLECTION_NAME);
+    super(COLLECTIONS.carrinho);
   }
 
   public async findCartItems(userId: string) {
