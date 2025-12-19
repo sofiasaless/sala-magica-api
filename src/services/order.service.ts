@@ -1,7 +1,13 @@
+import { Timestamp } from "firebase-admin/firestore";
 import { Order, OrderStatus } from "../types/order.type";
 import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
 import { eventBus, eventNames } from "./eventBus";
 import { PatternService } from "./pattern.service";
+
+interface FilterProps {
+  ultimoMes?: boolean,
+  status?: string
+}
 
 class OrderService extends PatternService {
   constructor() {
@@ -21,14 +27,15 @@ class OrderService extends PatternService {
       imagemReferencia: data.imagemReferencia,
       pendente: data.pendente,
       referencias: data.referencias,
+      status: data.status,
       solicitante: data.solicitante?.id || '',
-      data_envio: data.data_envio && data.data_envio.toDate ? data.data_envio.toDate() : new Date(data.data_envio),
+      dataEncomenda: data.dataEncomenda && data.dataEncomenda.toDate ? data.dataEncomenda.toDate() : new Date(data.data_envio),
     };
   }
 
   public async getOrders(): Promise<Order[]> {
     let query: FirebaseFirestore.Query = this.setup()
-    const snap = await query.orderBy("data_envio", "desc").get();
+    const snap = await query.orderBy("dataEncomenda", "desc").get();
 
     const encomendas: Order[] = snap.docs.map(doc => this.docToOrder(doc.id, doc.data()));
     return encomendas
@@ -44,7 +51,7 @@ class OrderService extends PatternService {
       status: 'EM ANÁLISE' as OrderStatus,
       categoria_reference: idToDocumentRef(payload.categoria_reference as string, COLLECTIONS.categorias),
       solicitante: idToDocumentRef(id_usuario as string, COLLECTIONS.usuarios),
-      data_envio: new Date(),
+      dataEncomenda: new Date(),
     };
 
     const ref = await this.setup().add(dataToSave);
@@ -57,7 +64,7 @@ class OrderService extends PatternService {
     return encomenda
   }
 
-  public async updateOrder (id_encomenda: string, payload: Partial<Order>) {
+  public async updateOrder(id_encomenda: string, payload: Partial<Order>) {
     if (id_encomenda === undefined) throw new Error("id da encomenda é necessária para atualização");
 
     const encomendaRef = this.setup().doc(id_encomenda);
@@ -75,17 +82,17 @@ class OrderService extends PatternService {
     })
   }
 
-  public async deleteOrder (order_id: string) {
+  public async deleteOrder(order_id: string) {
     await this.setup().doc(order_id).delete();
   }
 
-  public async getOrderById (order_id: string): Promise<Order> {
+  public async getOrderById(order_id: string): Promise<Order> {
     const doc = await this.setup().doc(order_id).get();
     if (!doc.exists) throw new Error("Encomenda não encontrada");
     return this.docToOrder(doc.id, doc.data()!);
   }
 
-  public async getOrdersByUserId (id_usuario: string): Promise<Order[]> {
+  public async getOrdersByUserId(id_usuario: string): Promise<Order[]> {
     const ordersSnap = await this.setup().where("solicitante", "==", idToDocumentRef(id_usuario, COLLECTIONS.usuarios)).get()
 
     if (ordersSnap.empty) return []
@@ -95,6 +102,31 @@ class OrderService extends PatternService {
     })
 
     return encomendasEncontradas;
+  }
+
+  public async countOrders(filtro: FilterProps) {
+    let totalQuery: FirebaseFirestore.Query = this.setup();
+
+    if (filtro.ultimoMes) {
+      const agora = new Date();
+
+      const inicioDoMes = new Date(
+        agora.getFullYear(),
+        agora.getMonth(),
+        1,
+        0,
+        0,
+        0,
+        0
+      ); 
+      totalQuery = totalQuery.where("dataEncomenda", ">=", Timestamp.fromDate(inicioDoMes));
+    }
+
+    if (filtro.status) totalQuery = totalQuery.where("status", "==", filtro.status);
+
+    const snapshot = await totalQuery.count().get()
+
+    return snapshot.data().count
   }
 }
 

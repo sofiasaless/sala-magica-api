@@ -11,10 +11,10 @@ export const findOrders = async (req: Request, res: Response) => {
     res.status(200).json(orders)
   } catch (err: any) {
     console.error("listOders error:", err);
-    res.status(400).json({ message: `Erro ao listar produtos: ${err.message}` });
+    res.status(400).json({ message: `Erro ao listar encomendas: ${err.message}` });
   }
 }
-router.get("/admin/list", authMiddleware('admin'), findOrders)
+router.get("/admin/findAll", authMiddleware('admin'), findOrders)
 
 export const findOrderById = async (req: Request, res: Response) => {
   try {
@@ -79,5 +79,23 @@ export const deleteOrder = async (req: Request, res: Response) => {
   }
 }
 router.delete("/delete/:id", deleteOrder)
+
+
+export const countOrders = async (req: Request, res: Response) => {
+  try {
+    const ultimoMes = ((req.query.ultimoMes as string) === 'true')
+    const status = req.query.status as string
+
+    const resultado = await orderService.countOrders({
+      ultimoMes: ultimoMes,
+      status
+    });
+    res.status(200).json({total: resultado})
+  } catch (err: any) {
+    console.error("listOders error:", err);
+    res.status(400).json({ message: `Erro ao listar encomendas: ${err.message}` });
+  }
+}
+router.get("/admin/count", authMiddleware('admin'), countOrders)
 
 export default router;

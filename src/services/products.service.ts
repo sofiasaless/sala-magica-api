@@ -3,6 +3,10 @@ import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
 import { eventBus, eventNames } from "./eventBus";
 import { PatternService } from "./pattern.service";
 
+interface FilterProps {
+  categoria?: string,
+  ativo?: boolean
+}
 
 class ProductService extends PatternService {
   constructor() {
@@ -22,7 +26,7 @@ class ProductService extends PatternService {
       categoria: data.categoria,
       altura: data.altura,
       comprimento: data.comprimento,
-      categoria_reference: data.categoria_reference?.id || '',
+      categoria_reference: data.categoria_reference.id || '',
       imagemCapa: data.imagemCapa,
       imagens: data.imagens || [],
       ativo: data.ativo === undefined ? true : data.ativo,
@@ -153,10 +157,9 @@ class ProductService extends PatternService {
       snapshot = await query.limit(limit).get();
     }
 
-    const produtos = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...(doc.data() as Product)
-    }));
+    const produtos = snapshot.docs.map(doc => {
+      return this.docToProduto(doc.id, doc.data()!)
+    });
 
     const first = snapshot.docs[0];
     const last = snapshot.docs[snapshot.docs.length - 1];
@@ -179,10 +182,12 @@ class ProductService extends PatternService {
     await this.setup().doc(product_id).delete();
   }
 
-  public async countProducts (categoria?: string) {
+  public async countProducts (filtro: FilterProps) {
     let totalQuery: FirebaseFirestore.Query = this.setup();
 
-    if (categoria) totalQuery = totalQuery.where("categoria_reference", "==", idToDocumentRef(categoria, COLLECTIONS.categorias));
+    if (filtro.categoria) totalQuery = totalQuery.where("categoria_reference", "==", idToDocumentRef(filtro.categoria, COLLECTIONS.categorias));
+
+    if (filtro.ativo) totalQuery = totalQuery.where("ativo", "==", filtro.ativo);
 
     const snapshot = await totalQuery.count().get()
 

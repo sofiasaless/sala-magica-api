@@ -98,7 +98,12 @@ router.delete("/delete/:id", authMiddleware('admin'), deleteProduct)
 export const countTotalProducts = async (req: Request, res: Response) => {
   try {
     const categoria_filtro = req.query.categoria as string
-    const total = await productService.countProducts(categoria_filtro)
+    const ativo = ((req.query.ativo as string) === 'true') 
+
+    const total = await productService.countProducts({
+      categoria: categoria_filtro,
+      ativo: ativo
+    })
     res.status(200).json({ total: total })
   } catch (error) {
     res.status(400).json({ message: "Erro ao contar total de produtos" })

@@ -10,7 +10,8 @@ export type Order = {
   imagemReferencia?: string[],
   referencias?: string,
   solicitante: string | DocumentReference,
-  data_envio: Date
+  status: OrderStatus,
+  dataEncomenda: Date
 }
 
 export type OrderStatus = 'EM ANÁLISE' | 'EM PRODUÇÃO' | 'CANCELADO' | 'FINALIZADO'
