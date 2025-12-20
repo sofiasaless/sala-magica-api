@@ -57,8 +57,6 @@ export const updateOrder = async (req: Request, res: Response) => {
     const id_encomenda = req.params.id as string;
     const body = req.body as Partial<Order>;
 
-    if (id_encomenda === "") return res.status(400).json({ error: `ID da encomenda é obrigatório` });
-
     await orderService.updateOrder(id_encomenda, body);
     res.sendStatus(200);
   } catch (err: any) {
@@ -66,7 +64,7 @@ export const updateOrder = async (req: Request, res: Response) => {
     res.status(400).json({ message: err.message || `Erro ao atualizar encomenda: ${err.message}` });
   }
 };
-router.put("/update/:id", updateOrder)
+router.put("/admin/update/:id", updateOrder)
 
 export const deleteOrder = async (req: Request, res: Response) => {
   try {

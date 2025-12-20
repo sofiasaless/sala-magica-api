@@ -14,4 +14,4 @@ export type Order = {
   dataEncomenda: Date
 }
 
-export type OrderStatus = 'EM ANÁLISE' | 'EM PRODUÇÃO' | 'CANCELADO' | 'FINALIZADO'
+export type OrderStatus = 'NOVA' | 'EM ANÁLISE' | 'EM PRODUÇÃO' | 'CANCELADO' | 'FINALIZADO'

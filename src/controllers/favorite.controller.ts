@@ -35,8 +35,7 @@ export const findFavoritesProductsByUser = async (req: Request, res: Response) =
     const favorites = await favoriteService.getFavoritesProductsByUserId(userId);
     res.status(200).json(favorites);
   } catch (err: any) {
-    console.error("listFavoritesByUser error:", err);
-    res.status(500).json({ message: `Erro ao listar favoritos do usuário ${err.message}` });
+    res.status(400).json({ message: err.message });
   }
 }
 router.get("/findAll", authMiddleware('user'), findFavoritesProductsByUser);

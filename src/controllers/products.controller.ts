@@ -37,7 +37,7 @@ export const createProduct = async (req: Request, res: Response) => {
     res.status(201).json(created);
   } catch (err: any) {
     console.error("createProduct error:", err);
-    res.status(400).json({ message: err.message || `Erro ao criar produto: ${err.message}` });
+    res.status(400).json({ message: err.message });
   }
 };
 router.post("/admin", authMiddleware('admin'), createProduct);

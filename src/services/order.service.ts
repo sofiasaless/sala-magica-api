@@ -48,7 +48,7 @@ class OrderService extends PatternService {
 
     const dataToSave = {
       ...payload,
-      status: 'EM ANÁLISE' as OrderStatus,
+      status: 'NOVA' as OrderStatus,
       categoria_reference: idToDocumentRef(payload.categoria_reference as string, COLLECTIONS.categorias),
       solicitante: idToDocumentRef(id_usuario as string, COLLECTIONS.usuarios),
       dataEncomenda: new Date(),
@@ -65,7 +65,7 @@ class OrderService extends PatternService {
   }
 
   public async updateOrder(id_encomenda: string, payload: Partial<Order>) {
-    if (id_encomenda === undefined) throw new Error("id da encomenda é necessária para atualização");
+    if (id_encomenda === undefined || id_encomenda === '') throw new Error("ID da encomenda é necessária para atualização");
 
     const encomendaRef = this.setup().doc(id_encomenda);
     const encomendaDoc = await encomendaRef.get();
