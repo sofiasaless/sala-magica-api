@@ -1,5 +1,6 @@
 import { Product } from "../types/product.type";
 import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
+import { dictionaryService } from "./dictionary.service";
 import { eventBus, eventNames } from "./eventBus";
 import { PatternService } from "./pattern.service";
 
@@ -9,6 +10,8 @@ interface FilterProps {
 }
 
 class ProductService extends PatternService {
+  private dictService = dictionaryService;
+
   constructor() {
     super(COLLECTIONS.produtos)
   }
@@ -38,7 +41,7 @@ class ProductService extends PatternService {
    * cria produto
    * - aceita Product onde dataAnuncio é Date ou string ISO; armazenamos como Timestamp
    */
-  public async createProduct (payload: Partial<Product>) {
+  public async createProduct(payload: Partial<Product>) {
     // preencher defaults mínimos
     const toCreate: Omit<Product, "id"> = {
       titulo: payload.titulo || "",
@@ -59,14 +62,29 @@ class ProductService extends PatternService {
     if (!toCreate.titulo || toCreate.titulo === '') throw new Error("Campo título é obrigatório");
     if (toCreate.preco === undefined || toCreate.preco === null) throw new Error("Campo preço é obrigatório");
 
-    const ref = await this.setup().add(toCreate);
-    const doc = await ref.get();
-    const produto = this.docToProduto(doc.id, doc.data()!);
+    let productId: string = ''
+    // a adição do produto é uma transação por precisar adicionar no dicionario de pesquisa
+    await this.firestore_db().runTransaction(async (transaction) => {
+      // criando a referência do produto para adiciona-lo
+      const produtoRef = this.setup().doc();
+      productId = produtoRef.id
+      
+      transaction.set(produtoRef, toCreate);
 
+      await this.dictService.addItem(transaction, {
+        productId: productId,
+        label: toCreate.titulo
+      })
+      
+    })
+    
+    const doc = await this.setup().doc(productId).get();
+    const creadtedProduct = this.docToProduto(doc.id, doc.data()!);
+        
     // emitindo o evento de produto criado para a notificação
-    await eventBus.emit(eventNames.PRODUTO_CRIADO, produto);
+    await eventBus.emit(eventNames.PRODUTO_CRIADO, creadtedProduct);
 
-    return produto;
+    return creadtedProduct;
   };
 
   /**
@@ -74,7 +92,7 @@ class ProductService extends PatternService {
    * @param payload
    * @param id_produto
   */
-  public async updateProduct (id_produto: string, payload: Partial<Product>): Promise<void> {
+  public async updateProduct(id_produto: string, payload: Partial<Product>): Promise<void> {
     const produtoRef = this.setup().doc(id_produto);
     const produtoDoc = await produtoRef.get();
 
@@ -86,16 +104,24 @@ class ProductService extends PatternService {
       if (campo in payload) delete (payload as any)[campo];
     }
 
-    await produtoRef.update({
-      ...payload
-    });
+    await this.firestore_db().runTransaction(async (transaction) => {
+      if (payload.categoria_reference) {
+        payload.categoria_reference = idToDocumentRef(payload.categoria_reference as string, COLLECTIONS.categorias);
+      }
 
-    // se houver atualização da categoria, deve ser feita por último por se tratar de um reference
-    if (payload.categoria_reference) {
-      await produtoRef.update({
-        categoria_reference: idToDocumentRef(payload.categoria_reference as string, COLLECTIONS.categorias)
-      });
-    }
+      // se tiver alteração no titulo, o dicionario também deverá ser atualizado
+      if (payload.titulo) {
+        await this.dictService.updateItem(transaction, {
+          label: payload.titulo,
+          productId: id_produto
+        })
+      }
+
+      transaction.update(produtoRef, {
+        ...payload
+      })
+
+    })
   }
 
 
@@ -103,7 +129,7 @@ class ProductService extends PatternService {
    * lista todos os produtos
    * - aceita Product onde dataAnuncio é Date ou string ISO; armazenamos como Timestamp
    */
-  public async listProducts (): Promise<Product[]> {
+  public async listProducts(): Promise<Product[]> {
     let query: FirebaseFirestore.Query = this.setup();
     const snap = await query.orderBy("dataAnuncio", "desc").get();
 
@@ -111,7 +137,7 @@ class ProductService extends PatternService {
     return items;
   };
 
-  public async getProductById (product_id: string): Promise<Product> {
+  public async getProductById(product_id: string): Promise<Product> {
     const doc = await this.setup().doc(product_id).get();
     if (!doc.exists) throw new Error("Produto não encontrado por id");
     return this.docToProduto(doc.id, doc.data()!);
@@ -123,7 +149,7 @@ class ProductService extends PatternService {
    * @param startAfterId 
    * @returns 
   */
-  public async pageProducts ({
+  public async pageProducts({
     limit,
     categoria,
     ordem,
@@ -175,14 +201,18 @@ class ProductService extends PatternService {
    * exclui o produto da coleção
    * @param product_id 
    */
-  public async deleteProduct (product_id: string) {
+  public async deleteProduct(product_id: string) {
     // posteriormente vai ser necessário excluir outros documentos que terão vinculos com o produto (curtidas, carrinho, etc)
 
-    // por enquanto excluindo apenas o produto
-    await this.setup().doc(product_id).delete();
+    // por enquanto excluindo apenas o produto e sua referencia no dicionario
+    await this.firestore_db().runTransaction(async (transaction) => {
+      transaction.delete(this.setup().doc(product_id));
+
+      await this.dictService.removeItem(transaction, product_id);
+    })
   }
 
-  public async countProducts (filtro: FilterProps) {
+  public async countProducts(filtro: FilterProps) {
     let totalQuery: FirebaseFirestore.Query = this.setup();
 
     if (filtro.categoria) totalQuery = totalQuery.where("categoria_reference", "==", idToDocumentRef(filtro.categoria, COLLECTIONS.categorias));
