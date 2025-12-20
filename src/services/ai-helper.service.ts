@@ -1,5 +1,6 @@
 import OpenAI from "openai";
-import { SuggestionFields } from "../types/suggestion.type";
+import { SuggestionOrderDescriptionFields, SuggestionOrderResponseFields } from "../types/suggestion.type";
+import { systemPromptOrderDescription, systemPromptOrderResponse } from "../constants/ai-helper-systemPrompts.constant";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -7,19 +8,21 @@ const client = new OpenAI({
 
 class AiHelperService {
 
-  private systemSuggestDescription: string
+  private systemSuggestOrderDescription: string
+  private systemSuggestOrderResponse: string
 
   constructor() {
-    this.systemSuggestDescription = `Você é uma assistente criativa especializada em artesanato escolar infantil e decoração de jardins de infância. Seu objetivo é ajudar clientes a expressarem melhor suas ideias para encomendas personalizadas feitas à mão, usando uma linguagem clara. Nunca invente informações que o cliente não forneceu. Apenas organize, detalhe e torne a descrição mais compreensível para quem vai confeccionar a encomenda.`
+    this.systemSuggestOrderDescription = systemPromptOrderDescription,
+      this.systemSuggestOrderResponse = systemPromptOrderResponse
   }
 
-  public async suggestOrderDescription(payload: SuggestionFields) {
+  public async suggestOrderDescription(payload: SuggestionOrderDescriptionFields) {
     const completion = await client.chat.completions.create({
       model: 'gpt-5-nano',
       messages: [
         {
           role: "system",
-          content: this.systemSuggestDescription
+          content: this.systemSuggestOrderDescription
         },
         {
           role: "user",
@@ -32,8 +35,35 @@ class AiHelperService {
     return completion.choices[0].message.content
   }
 
+  public async suggestOrderResponse(payload: SuggestionOrderResponseFields) {
+    const completion = await client.chat.completions.create({
+      model: 'gpt-5-nano',
+      messages: [
+        {
+          role: "system",
+          content: this.systemSuggestOrderResponse
+        },
+        {
+          role: "user",
+          content: this.buildPromptForSuggestOrderResponse(payload)
+        },
+      ],
+      store: true
+    })
+
+    return completion.choices[0].message.content
+  }
+
   private buildPromptForSuggestedOrderDescription(category: string, initialText: string): string {
     return `Categoria da encomenda: ${category}. Descrição inicial: "${initialText}" Reescreva a descrição acima de forma mais clara, mais detalhada, com sugestões lúdicas e bem organizada, mantendo a ideia original e um tom acolhedor e criativo. O texto deve ter no máximo 800 caracteres e estar pronto para ser colado diretamente no campo de descrição da encomenda, portanto NÃO use: listas, tópicos, títulos, e NÃO faça perguntas, explique o que está fazendo ou inclua observações adicionais.`
+  }
+
+  private buildPromptForSuggestOrderResponse(fields: SuggestionOrderResponseFields) {
+    return `Dados da encomenda: 
+    Nome do cliente: ${fields.cliente_nome} 
+    Status da encomenda: ${fields.status_encomenda} 
+    Categoria: ${fields.categoria}
+    Descrição da encomenda: "${fields.descricao_encomenda}"`
   }
 
 }
