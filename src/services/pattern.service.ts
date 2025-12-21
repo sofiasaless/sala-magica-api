@@ -1,4 +1,5 @@
 import { db } from "../config/firebase";
+import admin from "firebase-admin";
 
 // definindo uma classe padrão que todos os services irão extender pra evitar repetição de código
 export abstract class PatternService {
@@ -15,6 +16,10 @@ export abstract class PatternService {
 
   protected firestore_db() {
     return db;
+  }
+
+  protected firestore_admin() {
+    return admin;
   }
 
 }

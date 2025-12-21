@@ -1,8 +1,10 @@
 import { Timestamp } from "firebase-admin/firestore";
-import { Order, OrderStatus } from "../types/order.type";
-import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
+import { Order, OrderResponses, OrderStatus, ResponseOrderFields, transformOrderResponses } from "../types/order.type";
+import { COLLECTIONS, docToObject, idToDocumentRef } from "../utils/firestore.util";
 import { eventBus, eventNames } from "./eventBus";
 import { PatternService } from "./pattern.service";
+import { NewOrderNotificationFields } from "./notification.service";
+import { userService } from "./user.service";
 
 interface FilterProps {
   ultimoMes?: boolean,
@@ -10,6 +12,8 @@ interface FilterProps {
 }
 
 class OrderService extends PatternService {
+  private usService = userService;
+
   constructor() {
     super(COLLECTIONS.encomendas)
   }
@@ -29,6 +33,7 @@ class OrderService extends PatternService {
       referencias: data.referencias,
       status: data.status,
       solicitante: data.solicitante?.id || '',
+      respostas: data.respostas,
       dataEncomenda: data.dataEncomenda && data.dataEncomenda.toDate ? data.dataEncomenda.toDate() : new Date(data.data_envio),
     };
   }
@@ -37,8 +42,13 @@ class OrderService extends PatternService {
     let query: FirebaseFirestore.Query = this.setup()
     const snap = await query.orderBy("dataEncomenda", "desc").get();
 
-    const encomendas: Order[] = snap.docs.map(doc => this.docToOrder(doc.id, doc.data()));
-    return encomendas
+    const encomendasEncontradas: Order[] = snap.docs.map((order) => {
+      return docToObject<Order>(order.id, {
+        ...order.data()!,
+        respostas: transformOrderResponses(order.data().respostas)
+      })
+    })    
+    return encomendasEncontradas
   }
 
   public async createOrder(id_usuario: string, payload: Partial<Order>): Promise<Order> {
@@ -48,7 +58,7 @@ class OrderService extends PatternService {
 
     const dataToSave = {
       ...payload,
-      status: 'EM ANÁLISE' as OrderStatus,
+      status: 'NOVA' as OrderStatus,
       categoria_reference: idToDocumentRef(payload.categoria_reference as string, COLLECTIONS.categorias),
       solicitante: idToDocumentRef(id_usuario as string, COLLECTIONS.usuarios),
       dataEncomenda: new Date(),
@@ -59,13 +69,17 @@ class OrderService extends PatternService {
     const encomenda = this.docToOrder(doc.id, doc.data()!);
 
     // disparando o envento de nova encomenda criada
-    await eventBus.emit(eventNames.ENCOMENDA_CRIADA, encomenda);
+    const notBody: NewOrderNotificationFields = {
+      order: encomenda,
+      name_solicitante: (await this.usService.findById(id_usuario)).displayName
+    }
+    await eventBus.emit(eventNames.ENCOMENDA_CRIADA, notBody);
 
     return encomenda
   }
 
   public async updateOrder(id_encomenda: string, payload: Partial<Order>) {
-    if (id_encomenda === undefined) throw new Error("id da encomenda é necessária para atualização");
+    if (id_encomenda === undefined || id_encomenda === '') throw new Error("ID da encomenda é necessária para atualização");
 
     const encomendaRef = this.setup().doc(id_encomenda);
     const encomendaDoc = await encomendaRef.get();
@@ -93,12 +107,18 @@ class OrderService extends PatternService {
   }
 
   public async getOrdersByUserId(id_usuario: string): Promise<Order[]> {
-    const ordersSnap = await this.setup().where("solicitante", "==", idToDocumentRef(id_usuario, COLLECTIONS.usuarios)).get()
+    const ordersSnap = await this.setup().where("solicitante", "==", idToDocumentRef(id_usuario, COLLECTIONS.usuarios))
+      .orderBy("dataEncomenda", "desc")
+      .get();
 
     if (ordersSnap.empty) return []
 
     const encomendasEncontradas: Order[] = ordersSnap.docs.map((order) => {
-      return this.docToOrder(order.id, order.data())
+      // return this.docToOrder(order.id, order.data())
+      return docToObject<Order>(order.id, {
+        ...order.data()!,
+        respostas: transformOrderResponses(order.data().respostas)
+      })
     })
 
     return encomendasEncontradas;
@@ -118,7 +138,7 @@ class OrderService extends PatternService {
         0,
         0,
         0
-      ); 
+      );
       totalQuery = totalQuery.where("dataEncomenda", ">=", Timestamp.fromDate(inicioDoMes));
     }
 
@@ -128,6 +148,22 @@ class OrderService extends PatternService {
 
     return snapshot.data().count
   }
+
+  public async anwserOrder(body: ResponseOrderFields) {
+    const responseToAdd: OrderResponses = {
+      data: new Date(),
+      mensagem: body.response
+    }
+
+    const orderRef = this.setup().doc(body.order.id!);
+
+    await orderRef.update({
+      respostas: this.firestore_admin().firestore.FieldValue.arrayUnion(responseToAdd)
+    })
+
+    await eventBus.emit(eventNames.ENCOMENDA_RESPONDIDA, body);
+  }
+
 }
 
 export const orderService = new OrderService();

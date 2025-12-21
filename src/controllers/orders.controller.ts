@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express";
-import { Order } from "../types/order.type";
-import { orderService } from "../services/order.service";
 import { authMiddleware } from "../auth/authMiddleware";
+import { orderService } from "../services/order.service";
+import { Order, ResponseOrderFields } from "../types/order.type";
 
 const router = Router()
 
@@ -57,8 +57,6 @@ export const updateOrder = async (req: Request, res: Response) => {
     const id_encomenda = req.params.id as string;
     const body = req.body as Partial<Order>;
 
-    if (id_encomenda === "") return res.status(400).json({ error: `ID da encomenda é obrigatório` });
-
     await orderService.updateOrder(id_encomenda, body);
     res.sendStatus(200);
   } catch (err: any) {
@@ -66,7 +64,7 @@ export const updateOrder = async (req: Request, res: Response) => {
     res.status(400).json({ message: err.message || `Erro ao atualizar encomenda: ${err.message}` });
   }
 };
-router.put("/update/:id", updateOrder)
+router.put("/admin/update/:id", updateOrder)
 
 export const deleteOrder = async (req: Request, res: Response) => {
   try {
@@ -79,7 +77,6 @@ export const deleteOrder = async (req: Request, res: Response) => {
   }
 }
 router.delete("/delete/:id", deleteOrder)
-
 
 export const countOrders = async (req: Request, res: Response) => {
   try {
@@ -97,5 +94,17 @@ export const countOrders = async (req: Request, res: Response) => {
   }
 }
 router.get("/admin/count", authMiddleware('admin'), countOrders)
+
+export const anwserOrder = async (req: Request, res: Response) => {
+  try {
+    const body = req.body as ResponseOrderFields
+    await orderService.anwserOrder(body)
+    res.send(200);
+  } catch (err: any) {
+    console.error("listOders error:", err);
+    res.status(400).json({ message: `Erro ao responder encomenda: ${err.message}` });
+  }
+}
+router.post("/admin/anwser-order", authMiddleware('admin'), anwserOrder)
 
 export default router;

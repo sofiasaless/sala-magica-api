@@ -37,10 +37,10 @@ export const createProduct = async (req: Request, res: Response) => {
     res.status(201).json(created);
   } catch (err: any) {
     console.error("createProduct error:", err);
-    res.status(400).json({ message: err.message || `Erro ao criar produto: ${err.message}` });
+    res.status(400).json({ message: err.message });
   }
 };
-router.post("/", authMiddleware('admin'), createProduct);
+router.post("/admin", authMiddleware('admin'), createProduct);
 
 export const updateProduct = async (req: Request, res: Response) => {
   try {
@@ -50,12 +50,12 @@ export const updateProduct = async (req: Request, res: Response) => {
     if (id_produto === "") return res.status(400).json({ error: "ID do produto é obrigatório para atualizar" });
 
     await productService.updateProduct(id_produto, body);
-    res.sendStatus(200);
+    res.send(200);
   } catch (err: any) {
-    res.status(400).json({ message: err.message || "Erro ao atualizar produto produto" });
+    res.status(400).json({ message: err.message });
   }
 };
-router.put("/update/:id", authMiddleware('admin'), updateProduct)
+router.put("/admin/update/:id", authMiddleware('admin'), updateProduct)
 
 export const pageProducts = async (req: Request, res: Response) => {
   try {
@@ -93,7 +93,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
     res.status(400).json({ message: "Erro ao deletar produto" });
   }
 }
-router.delete("/delete/:id", authMiddleware('admin'), deleteProduct)
+router.delete("/admin/delete/:id", authMiddleware('admin'), deleteProduct)
 
 export const countTotalProducts = async (req: Request, res: Response) => {
   try {
