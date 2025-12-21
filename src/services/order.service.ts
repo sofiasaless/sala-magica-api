@@ -3,6 +3,8 @@ import { Order, OrderStatus } from "../types/order.type";
 import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
 import { eventBus, eventNames } from "./eventBus";
 import { PatternService } from "./pattern.service";
+import { NewOrderNotificationFields } from "./notification.service";
+import { userService } from "./user.service";
 
 interface FilterProps {
   ultimoMes?: boolean,
@@ -10,6 +12,8 @@ interface FilterProps {
 }
 
 class OrderService extends PatternService {
+  private usService = userService;
+  
   constructor() {
     super(COLLECTIONS.encomendas)
   }
@@ -59,7 +63,11 @@ class OrderService extends PatternService {
     const encomenda = this.docToOrder(doc.id, doc.data()!);
 
     // disparando o envento de nova encomenda criada
-    await eventBus.emit(eventNames.ENCOMENDA_CRIADA, encomenda);
+    const notBody: NewOrderNotificationFields = {
+      order: encomenda,
+      name_solicitante: (await this.usService.findById(id_usuario)).displayName
+    }
+    await eventBus.emit(eventNames.ENCOMENDA_CRIADA, notBody);
 
     return encomenda
   }

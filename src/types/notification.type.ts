@@ -20,7 +20,10 @@ export type Notification = {
   tipo: NotificationType;
   destino: NotificationDestino; // quem deve receber
   referencia?: string; // link para o item relacionado (produto, encomenda etc.)
-  immmagens?: string[];
+  doc_ref?: { // alguma referencia de documento para puxar e exibir na notificação
+    ref: string,
+    colecao: string
+  }
   url?: string; // redirecionamento web
   lido: boolean;
   dataNotificacao: Date;
@@ -30,10 +33,9 @@ export type NotificationDestino =
   | { tipo: "USUARIO"; usuario_ref: DocumentReference }
   | { tipo: "ADMIN" };
 
-export type NotificationType = "PRODUTO" | "ENCOMENDA" | "SISTEMA";
+export type NotificationType = "PRODUTO" | "ENCOMENDA" | "SISTEMA" | "ENCOMENDA_RESPOSTA";
 
-export type OrderAwnserNotificationPayload = {
-  id_encomenda: string | DocumentReference;
-  id_usuario: string | DocumentReference;
-  mensagem: string;
-};
+export type NotificationRequestBody = Omit<
+  Notification,
+  "id" | "dataNotificacao" | "lido"
+>

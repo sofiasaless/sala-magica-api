@@ -1,17 +1,18 @@
 // notificationService.ts
 import { db } from "../config/firebase";
-import { Notification, NotificationDestino, NotificationType, OrderAwnserNotificationPayload } from "../types/notification.type";
+import { Notification, NotificationDestino, NotificationRequestBody } from "../types/notification.type";
 import { Order } from "../types/order.type";
-import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
+import { COLLECTIONS, docToObject, idToDocumentRef } from "../utils/firestore.util";
 import { PatternService } from "./pattern.service";
 
-interface CreateNotificationDTO {
-  titulo: string;
-  mensagem: string;
-  tipo: NotificationType;
-  destino: NotificationDestino;
-  referencia?: string;
-  url?: string;
+export interface NewOrderNotificationFields {
+  order: Order,
+  name_solicitante: string
+}
+
+export interface ResponseOrderNotificationFields {
+  order: Pick<Order, "id" | "solicitante">,
+  response: string
 }
 
 export class NotificationService extends PatternService {
@@ -20,30 +21,17 @@ export class NotificationService extends PatternService {
     super(COLLECTIONS.notificacoes)
   }
 
-  private async create(data: CreateNotificationDTO, createDoc = true) {
+  private async create(data: NotificationRequestBody, addDoc = true) {
     const doc: Notification = {
       ...data,
       dataNotificacao: new Date(),
       lido: false,
     }
-    if (createDoc) await this.setup().add(doc);
+    if (addDoc) await this.setup().add(doc);
     return doc
   }
 
-  async createProdutoNotificacao(produtoId: string, nomeProduto: string) {
-    const doc = await this.create({
-      titulo: "Novo produto disponível!",
-      mensagem: `Confira o novo produto "${nomeProduto}" agora na loja`,
-      tipo: "PRODUTO",
-      destino: {} as NotificationDestino, // destino será definido na função de criação global
-      url: `https://sala-magica.vercel.app/produtos/${produtoId}`,
-    }, false);
-
-    // mandando para a criação de notificação global
-    await this.createGlobalNotificacao(doc);
-  }
-
-  async createGlobalNotificacao(notificacao: Notification) {
+  private async createGlobalNotificacao(notificacao: Notification) {
     db.collection("usuarios").get().then(async (snapshot) => {
       const batch = db.batch();
       snapshot.forEach((doc) => {
@@ -61,39 +49,47 @@ export class NotificationService extends PatternService {
     });
   }
 
-  async createEncomendaNotificacao(order: Order) {
+  async createProdutoNotificacao(produtoId: string, nomeProduto: string) {
+    const doc = await this.create({
+      titulo: "Novo produto disponível na Sala Mágica!",
+      mensagem: `Confira o novo produto "${nomeProduto}" agora na loja`,
+      tipo: "PRODUTO",
+      doc_ref: {
+        colecao: COLLECTIONS.produtos,
+        ref: produtoId
+      },
+      destino: {} as NotificationDestino, // destino será definido na função de criação global
+    }, false);
+
+    // mandando para a criação de notificação global
+    await this.createGlobalNotificacao(doc);
+  }
+
+  async createEncomendaNotificacao(notBody: NewOrderNotificationFields) {
     await this.create({
-      titulo: `Novo pedido de encomenda realizado por (nome do usuario)!`,
-      mensagem: `${order.descricao}`,
+      titulo: `Novo pedido de encomenda realizado por ${notBody.name_solicitante}!`,
+      mensagem: `${notBody.order.descricao}`,
       tipo: "ENCOMENDA",
       destino: { tipo: "ADMIN" },
-      // referencia: `${order.imagemReferencia}`,
-      // url: `https://sala-magica.vercel.app/encomendas/${order.id}`,
+      referencia: `${notBody.order.imagemReferencia}`,
     }, true);
     console.info("notificação de nova encomenda criada")
   }
 
-  async createRespostaEncomendaNotificacao(payload: OrderAwnserNotificationPayload) {
-    // validações para campos vazios
-    if (payload.id_encomenda == undefined || payload.id_usuario == undefined || payload.mensagem == undefined) {
-      throw new Error("Campos obrigatórios ausentes na notificação de resposta de encomenda");
-    }
-
-    await this.create({
-      titulo: `Sua encomenda foi atualizada!`,
-      mensagem: `
-      Acompanhe o status da sua encomenda #${payload.id_encomenda} \n
-      Resposta: ${payload.mensagem}\n
-      Obrigado por escolher a Sala Mágica!
-      `,
-      tipo: "ENCOMENDA",
-      destino: { tipo: "USUARIO", usuario_ref: idToDocumentRef(payload.id_usuario as string, COLLECTIONS.usuarios) },
-      referencia: `${payload.id_encomenda}`,
-      url: `https://sala-magica.vercel.app/encomendas/${payload.id_encomenda}`,
+  async createRespostaEncomendaNotificacao(payload: ResponseOrderNotificationFields) {
+    return await this.create({
+      titulo: `Atualizações sobre sua encomenda de id #${payload.order.id}!`,
+      mensagem: `${payload.response}`,
+      tipo: "ENCOMENDA_RESPOSTA",
+      destino: { tipo: "USUARIO", usuario_ref: idToDocumentRef(payload.order.solicitante as string, COLLECTIONS.usuarios) },
+      doc_ref: {
+        colecao: COLLECTIONS.encomendas,
+        ref: payload.order.id as string
+      }
     }, true);
   }
 
-  async getNotificationsByUserId(id_usuario: string, lidas: boolean = false): Promise<Notification[]> {
+  public async findNotificationsByUserId(id_usuario: string, lidas: boolean = false): Promise<Notification[]> {
     let querySnapshot = await this.setup()
       .where("destino.tipo", "==", "USUARIO")
       .where("destino.usuario_ref", "==", idToDocumentRef(id_usuario, COLLECTIONS.usuarios))
@@ -102,10 +98,20 @@ export class NotificationService extends PatternService {
 
     if (lidas) querySnapshot.query.where("lido", "==", true)
 
-    const notificacoes: Notification[] = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data() as Notification,
-    }));
+    const notificacoes: Notification[] = querySnapshot.docs.map(doc => {
+      return docToObject<Notification>(doc.id, {
+        ...doc.data(),
+        destino: {
+          tipo: doc.data().destino.tipo,
+          usuario_ref: doc.data().destino.usuario_ref.id || 'Não informado'
+        },
+        doc_ref: {
+          ref: (doc.data().doc_ref?.ref === undefined)?null:doc.data().doc_ref.ref,
+          colecao: (doc.data().doc_ref?.colecao === undefined)?null:doc.data().doc_ref.colecao
+        }
+      })
+    });
+
     return notificacoes;
   }
 }
