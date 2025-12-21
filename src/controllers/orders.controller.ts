@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express";
-import { Order } from "../types/order.type";
-import { orderService } from "../services/order.service";
 import { authMiddleware } from "../auth/authMiddleware";
+import { orderService } from "../services/order.service";
+import { Order, ResponseOrderFields } from "../types/order.type";
 
 const router = Router()
 
@@ -78,7 +78,6 @@ export const deleteOrder = async (req: Request, res: Response) => {
 }
 router.delete("/delete/:id", deleteOrder)
 
-
 export const countOrders = async (req: Request, res: Response) => {
   try {
     const ultimoMes = ((req.query.ultimoMes as string) === 'true')
@@ -95,5 +94,17 @@ export const countOrders = async (req: Request, res: Response) => {
   }
 }
 router.get("/admin/count", authMiddleware('admin'), countOrders)
+
+export const anwserOrder = async (req: Request, res: Response) => {
+  try {
+    const body = req.body as ResponseOrderFields
+    await orderService.anwserOrder(body)
+    res.send(200);
+  } catch (err: any) {
+    console.error("listOders error:", err);
+    res.status(400).json({ message: `Erro ao responder encomenda: ${err.message}` });
+  }
+}
+router.post("/admin/anwser-order", authMiddleware('admin'), anwserOrder)
 
 export default router;

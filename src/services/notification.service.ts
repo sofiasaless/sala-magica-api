@@ -1,18 +1,13 @@
 // notificationService.ts
 import { db } from "../config/firebase";
 import { Notification, NotificationDestino, NotificationRequestBody } from "../types/notification.type";
-import { Order } from "../types/order.type";
+import { Order, ResponseOrderFields } from "../types/order.type";
 import { COLLECTIONS, docToObject, idToDocumentRef } from "../utils/firestore.util";
 import { PatternService } from "./pattern.service";
 
 export interface NewOrderNotificationFields {
   order: Order,
   name_solicitante: string
-}
-
-export interface ResponseOrderNotificationFields {
-  order: Pick<Order, "id" | "solicitante">,
-  response: string
 }
 
 export class NotificationService extends PatternService {
@@ -76,7 +71,7 @@ export class NotificationService extends PatternService {
     console.info("notificação de nova encomenda criada")
   }
 
-  async createRespostaEncomendaNotificacao(payload: ResponseOrderNotificationFields) {
+  async createRespostaEncomendaNotificacao(payload: ResponseOrderFields) {
     return await this.create({
       titulo: `Atualizações sobre sua encomenda de id #${payload.order.id}!`,
       mensagem: `${payload.response}`,
