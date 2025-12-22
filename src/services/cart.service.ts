@@ -3,7 +3,7 @@ import { ItemCart } from "../types/cart.type";
 import { COLLECTIONS, docToObject, idToDocumentRef } from "../utils/firestore.util";
 import { PatternService } from "./pattern.service";
 
-export class CartService extends PatternService {
+class CartService extends PatternService {
   
   constructor() {
     super(COLLECTIONS.carrinho);
@@ -75,6 +75,14 @@ export class CartService extends PatternService {
 
   }
 
+  public async removeInTransaction(transaction: FirebaseFirestore.Transaction, id_produto: string) {
+    const snap = await this.setup().where("produto_ref", "==", idToDocumentRef(id_produto, COLLECTIONS.produtos)).get();
+  
+    snap.docs.map((doc) => {
+      transaction.delete(doc.ref);
+    })
+  }
+
 }
 
-export const carService = new CartService();
+export const cartService = new CartService();

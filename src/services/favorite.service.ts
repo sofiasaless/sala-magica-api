@@ -75,6 +75,15 @@ class FavoriteService extends PatternService {
     await this.deleteFavoriteByFavId(favShareResult.docs[0].id);
   }
 
+  public async deleteFavoriteInTransaction(transaction: FirebaseFirestore.Transaction, product_id: string) {
+    const snap = await this.setup().where("id_produto", "==", idToDocumentRef(product_id, COLLECTIONS.produtos)).get()
+
+    snap.docs.map((doc) => {
+      transaction.delete(doc.ref);
+    })
+
+  }
+
 }
 
 export const favoriteService = new FavoriteService();
