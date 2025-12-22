@@ -53,6 +53,7 @@ export class NotificationService extends PatternService {
         colecao: COLLECTIONS.produtos,
         ref: produtoId
       },
+      url: `/produto/${produtoId}`,
       destino: {} as NotificationDestino, // destino será definido na função de criação global
     }, false);
 
@@ -80,7 +81,17 @@ export class NotificationService extends PatternService {
       doc_ref: {
         colecao: COLLECTIONS.encomendas,
         ref: payload.order.id as string
-      }
+      },
+      url: '/perfil'
+    }, true);
+  }
+
+  async createWelcomeNotification(id_usuario: string, nomeUsuario: string) {
+    return await this.create({
+      titulo: "Bem-vindo à Sala Mágica! 🎨",
+      mensagem: `Estamos muito felizes em ter você conosco, ${nomeUsuario}! Explore nosso catálogo de produtos artesanais para decoração de sala de aula. Temos painéis, murais, letras decorativas e muito mais. Se precisar de algo personalizado, faça uma encomenda!`,
+      destino: { tipo: "USUARIO", usuario_ref: idToDocumentRef(id_usuario, COLLECTIONS.usuarios)},
+      tipo: "SISTEMA"
     }, true);
   }
 
@@ -109,6 +120,14 @@ export class NotificationService extends PatternService {
 
     return notificacoes;
   }
+
+  public async markAsRead(id_not: string) {
+    const ref = this.setup().doc(id_not);
+    await ref.update({
+      lido: true
+    })
+  }
+
 }
 
 export const notificationService = new NotificationService();
