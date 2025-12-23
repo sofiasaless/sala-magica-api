@@ -10,6 +10,10 @@ export interface NewOrderNotificationFields {
   name_solicitante: string
 }
 
+export interface WelcomeNotificationFields {
+  id_usuario: string, nomeUsuario: string
+}
+
 export class NotificationService extends PatternService {
 
   constructor() {
@@ -86,11 +90,11 @@ export class NotificationService extends PatternService {
     }, true);
   }
 
-  async createWelcomeNotification(id_usuario: string, nomeUsuario: string) {
+  async createWelcomeNotification(data: WelcomeNotificationFields) {
     return await this.create({
       titulo: "Bem-vindo à Sala Mágica! 🎨",
-      mensagem: `Estamos muito felizes em ter você conosco, ${nomeUsuario}! Explore nosso catálogo de produtos artesanais para decoração de sala de aula. Temos painéis, murais, letras decorativas e muito mais. Se precisar de algo personalizado, faça uma encomenda!`,
-      destino: { tipo: "USUARIO", usuario_ref: idToDocumentRef(id_usuario, COLLECTIONS.usuarios)},
+      mensagem: `Estamos muito felizes em ter você conosco, ${data.nomeUsuario}! Explore nosso catálogo de produtos artesanais para decoração de sala de aula. Temos painéis, murais, letras decorativas e muito mais. Se precisar de algo personalizado, faça uma encomenda!`,
+      destino: { tipo: "USUARIO", usuario_ref: idToDocumentRef(data.id_usuario, COLLECTIONS.usuarios) },
       tipo: "SISTEMA"
     }, true);
   }
@@ -100,7 +104,7 @@ export class NotificationService extends PatternService {
       .where("destino.tipo", "==", "USUARIO")
       .where("destino.usuario_ref", "==", idToDocumentRef(id_usuario, COLLECTIONS.usuarios))
       .orderBy("dataNotificacao", "desc")
-    .get();
+      .get();
 
     if (lidas) querySnapshot.query.where("lido", "==", true)
 
@@ -112,8 +116,8 @@ export class NotificationService extends PatternService {
           usuario_ref: doc.data().destino.usuario_ref.id || 'Não informado'
         },
         doc_ref: {
-          ref: (doc.data().doc_ref?.ref === undefined)?null:doc.data().doc_ref.ref,
-          colecao: (doc.data().doc_ref?.colecao === undefined)?null:doc.data().doc_ref.colecao
+          ref: (doc.data().doc_ref?.ref === undefined) ? null : doc.data().doc_ref.ref,
+          colecao: (doc.data().doc_ref?.colecao === undefined) ? null : doc.data().doc_ref.colecao
         }
       })
     });

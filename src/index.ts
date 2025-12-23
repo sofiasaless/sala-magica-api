@@ -1,3 +1,4 @@
+import './listeners/users.listener';
 import './listeners/product.listener';
 import './listeners/order.listener';
 import dotenv from "dotenv";
