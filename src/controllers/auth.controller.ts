@@ -62,7 +62,7 @@ export const verifyAdmin = async (req: Request, res: Response) => {
   try {
     res.sendStatus(200);
   } catch (error: any) {
-    res.status(401).json({ message: error.message });    
+    res.status(401).json({ message: error.message });
   }
 }
 router.get("/admin/verify", authMiddleware('admin'), verifyAdmin)

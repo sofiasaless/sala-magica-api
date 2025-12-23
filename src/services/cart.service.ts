@@ -75,8 +75,16 @@ class CartService extends PatternService {
 
   }
 
-  public async removeInTransaction(transaction: FirebaseFirestore.Transaction, id_produto: string) {
+  public async removeInTransactionByProductId(transaction: FirebaseFirestore.Transaction, id_produto: string) {
     const snap = await this.setup().where("produto_ref", "==", idToDocumentRef(id_produto, COLLECTIONS.produtos)).get();
+  
+    snap.docs.map((doc) => {
+      transaction.delete(doc.ref);
+    })
+  }
+
+  public async removeInTransactionByUserUid(transaction: FirebaseFirestore.Transaction, uid_user: string) {
+    const snap = await this.setup().where("usuario_ref", "==", idToDocumentRef(uid_user, COLLECTIONS.usuarios)).get();
   
     snap.docs.map((doc) => {
       transaction.delete(doc.ref);

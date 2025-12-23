@@ -1,9 +1,7 @@
 import { Request, Response, Router } from "express";
-import { CreateRequest } from "firebase-admin/auth";
-import { User } from "../types/user.type";
-import { authService } from "../services/auth.service";
 import { authMiddleware } from "../auth/authMiddleware";
 import { userService } from "../services/user.service";
+import { User } from "../types/user.type";
 
 const router = Router();
 
@@ -27,5 +25,29 @@ export const findById = async (req: Request, res: Response) => {
   }
 }
 router.get("/admin/find/:id", authMiddleware('admin'), findById)
+
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.uid!;
+    const body = req.body as Partial<User>
+    await userService.updateUser(userId, body);
+    res.send(200);
+  } catch (error: any) {
+    res.status(401).json({ message: error.message })
+  }
+}
+router.put("/update/user", authMiddleware('user'), updateUser)
+
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.uid!;
+    await userService.deleteUser(userId);
+    res.send(200);
+  } catch (error: any) {
+    console.error(error)
+    res.status(401).json({ message: error.message })
+  }
+}
+router.delete("/delete/user", authMiddleware('user'), deleteUser)
 
 export default router;

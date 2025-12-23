@@ -216,10 +216,10 @@ class ProductService extends PatternService {
       await this.dictService.removeItem(transaction, product_id);
 
       // removendo dos favoritos
-      await this.favService.deleteFavoriteInTransaction(transaction, product_id);
+      await this.favService.deleteFavoriteInTransactionByProductId(transaction, product_id);
     
       // removendo do carrinho
-      await this.crtService.removeInTransaction(transaction, product_id);
+      await this.crtService.removeInTransactionByProductId(transaction, product_id);
     })
   }
 
