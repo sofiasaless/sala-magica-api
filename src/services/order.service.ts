@@ -164,6 +164,16 @@ class OrderService extends PatternService {
     await eventBus.emit(eventNames.ENCOMENDA_RESPONDIDA, body);
   }
 
+  public async deleteInTransaction(transaction: FirebaseFirestore.Transaction, uid_user: string) {
+    const snap = await this.setup().where("solicitante", "==", idToDocumentRef(uid_user, COLLECTIONS.usuarios)).get()
+  
+    console.info(snap.docs)
+
+    snap.docs.map((doc) => {
+      transaction.delete(doc.ref)
+    })
+  }
+
 }
 
 export const orderService = new OrderService();

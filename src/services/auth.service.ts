@@ -3,6 +3,8 @@ import { adminAuth } from "../config/firebase";
 import { User, UserFirestoreDoc } from "../types/user.type";
 import { COLLECTIONS } from "../utils/firestore.util";
 import { PatternService } from "./pattern.service";
+import { eventBus, eventNames } from "./eventBus";
+import { WelcomeNotificationFields } from "./notification.service";
 
 class AuthService extends PatternService {
   constructor() {
@@ -13,7 +15,7 @@ class AuthService extends PatternService {
     if (user.email === undefined || user.email === '') throw new Error("Necessário preencher e-mail")
     if (user.password === undefined || user.password === '') throw new Error("Necessário preencher senha")
 
-    return await getAuth().createUser({
+    const result = await getAuth().createUser({
       ...user,
       disabled: false,
       emailVerified: false
@@ -38,6 +40,15 @@ class AuthService extends PatternService {
       .catch((error) => {
         throw new Error(error)
       });
+
+    const notFileds: WelcomeNotificationFields = {
+      nomeUsuario: result.displayName as string,
+      id_usuario: result.uid as string
+    }
+
+    await eventBus.emit(eventNames.NOVO_USUARIO, notFileds);
+
+    return result
 
   }
 

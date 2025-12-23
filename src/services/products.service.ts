@@ -1,7 +1,9 @@
 import { Product } from "../types/product.type";
 import { COLLECTIONS, idToDocumentRef } from "../utils/firestore.util";
+import { cartService } from "./cart.service";
 import { dictionaryService } from "./dictionary.service";
 import { eventBus, eventNames } from "./eventBus";
+import { favoriteService } from "./favorite.service";
 import { PatternService } from "./pattern.service";
 
 interface FilterProps {
@@ -11,6 +13,8 @@ interface FilterProps {
 
 class ProductService extends PatternService {
   private dictService = dictionaryService;
+  private favService = favoriteService;
+  private crtService = cartService;
 
   constructor() {
     super(COLLECTIONS.produtos)
@@ -208,7 +212,14 @@ class ProductService extends PatternService {
     await this.firestore_db().runTransaction(async (transaction) => {
       transaction.delete(this.setup().doc(product_id));
 
+      // removendo do dicionario
       await this.dictService.removeItem(transaction, product_id);
+
+      // removendo dos favoritos
+      await this.favService.deleteFavoriteInTransactionByProductId(transaction, product_id);
+    
+      // removendo do carrinho
+      await this.crtService.removeInTransactionByProductId(transaction, product_id);
     })
   }
 
