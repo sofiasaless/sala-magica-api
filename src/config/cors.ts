@@ -1,7 +1,8 @@
 import cors from "cors";
 
 const allowedOrigins = [
-  "http://localhost:5173"
+  "https://sala-magica-client.vercel.app",
+  "http://localhost:5173",
 ];
 
 export const corsConfig = cors({
